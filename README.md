@@ -1,6 +1,5 @@
 # neptune
-![GitHub Logo](/neptune.png | width=100)
-Format: ![Neptune Logo](url)
+<img src="/neptune.png" width="48">
 Repository for the Neptune Autonomous Hovercraft project.
 
 ## Built with
