@@ -1,5 +1,5 @@
 <img src="/neptune.png" width="200">
-<hr><br>
+<hr>
 Repository for the Neptune Autonomous Hovercraft project.
 
 ## Built with
