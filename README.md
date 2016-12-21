@@ -18,4 +18,4 @@ according to the part of the system they are utilized by.
 * **Alexander James** - *Wireless Communication and Sensing* - [N/A](https://github.com/404)
 * **Maciej Mierzwa** - *Mechanical Design Principles* - [N/A](https://github.com/404)
 * **Ronnie Smith** - *Software and Human Interface for Semi-Autonomous Operation* - [ronsm](https://github.com/ronsm)
-* **Sebastian Smith** - *Power, Actuator Control and Hardware Interface* - [N/A](https://github.com/404)
+* **Seb Smith** - *Power, Actuator Control and Hardware Interface* - [seb43654](https://github.com/seb43654)
