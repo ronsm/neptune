@@ -12,6 +12,7 @@ according to the part of the system they are utilized by.
 * [SB Admin 2](https://startbootstrap.com/template-overviews/sb-admin-2/) - Bootstrap framework for GUI
 * [i2c](https://www.npmjs.com/package/i2c) - Node-based interface for I2C on Raspberry Pi
 * [Socket.io](http://socket.io/) - Node-based realtime application framework for client-server communications
+* [Motion](http://lavrsen.dk/foswiki/bin/view/Motion/WebHome) - Live video capture for Linux with motion detection
 
 ## Authors
 
