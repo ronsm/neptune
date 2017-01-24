@@ -16,6 +16,11 @@
  * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
+ * 
+ * ATTRIBUTIONS: This project uses and derives open source code and packages from
+ * various authors, which are attributed here where possible.
+ *    1) "Arduino-based Ultrasonic Radar" by Ashutosh Bhatt
+ *        http://www.engineersgarage.com/contribution/arduino-based-ultrasonic-radar
  */
  
 #include <Wire.h>
