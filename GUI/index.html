@@ -261,9 +261,24 @@
                      <div class="panel-heading">
                         <b>Master Controls</b>
                      </div>
-                     <div class="panel-body">
-                        <button id="ON">ON</button> &emsp;
-                        <button id="OFF">OFF</button>
+                     <div class="panel-body" style="text-align: center;">
+                        <p class="style_2">Power Status</p>
+                        <div class="button-center">
+                          <button id="OFF" class="style_1">OFF</button>
+                          <button id="ON" class="style_1">ON</button>
+                        </div>
+
+                        <p class="style_1">Operating Mode</p>
+                        <div class="button-center">
+                          <button id="AUTO" class="style_1">AUTO</button>
+                          <button id="MANUAL" class="style_1">MANUAL</button>
+                        </div>
+
+                        <p class="style_1">Environment Select</p>
+                        <div class="button-center">
+                          <button id="OUTDOOR" class="style_1">OUTDOOR</button>
+                          <button id="INDOOR" class="style_1">INDOOR</button>
+                        </div>
                      </div>
                   </div>
                   <div class="panel panel-default">
@@ -271,7 +286,19 @@
                         <b>Manual Controls</b>
                      </div>
                      <div class="panel-body">
-                        Text
+                       <div class="button-center">
+                         <button id="FORWARD" class="style_1">&#x2191;</button>
+                       </div>
+
+                       <p class="style_1">Rudder Position</p>
+                       <div class="button-center">
+                         <input id="RUDDER_POS" type="range" min="0" max="10" step="1"></input>
+                       </div>
+
+                       <p class="style_1">Speed</p>
+                       <div class="button-center">
+                         <input id="SPEED_POS" type="range" min="0" max="9" step="1" value="0"></input>
+                       </div>
                      </div>
                   </div>
                </div>
@@ -321,7 +348,7 @@
                </div>
                <div class="col-lg-12">
                   <div class="panel panel-default">
-                     <div class="panel-
+                     <div class="panel-heading">
                         <b>Log</b>
                      </div>
                      <div class="panel-body">

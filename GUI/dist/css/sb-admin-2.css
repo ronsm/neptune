@@ -28,6 +28,34 @@ body {
     border-left: 1px solid #e7e7e7;
   }
 }
+
+b{
+  font-size: 12pt;
+}
+
+button.style_1{
+  width: 90px;
+  display: inline-block;
+  float: none;
+  text-align: center;
+  margin: 0px auto 0px auto;
+}
+
+.button-center{
+  text-align: center;
+  margin-bottom: 10pt;
+}
+
+p.style_1{
+  font-weight: bold;
+}
+
+p.style_2{
+  font-weight: bold;
+  margin-top: auto;
+  padding-top: 0pt;
+}
+
 .navbar-top-links {
   margin-right: 0;
 }
