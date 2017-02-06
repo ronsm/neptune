@@ -28,6 +28,11 @@
 #include <Wire.h>
 #include "navigation_controller_types.h"
 #include <Servo.h>
+#include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>
+
+/* Definitions */
+#define GPSECHO true
 
 /* Variables */
 
@@ -45,13 +50,34 @@ int currentDistances[4];
 const float pi = 3.14159;
 
 // I/O configuration
-const int radarTrigPin = 10;
-const int radarEchoPin = 11;
+const int radarTrigPin = 22;
+const int radarEchoPin = 23;
+
+// Ultrasonic rangefinder
+const int rangeTrigPin = 10;
+const int rangeEchoPin = 11;
 
 // Radar
 Servo radarServo;
 int radar_angle = 0;
 int actual_radar_angle;
+
+// Mapping
+bool maparray[50][50];    
+int prevX[20];                 
+int prevY[20];
+int pos;
+int Xaxis;
+int Yaxis;
+
+// GPS
+Adafruit_GPS GPS(&Serial1);
+HardwareSerial mySerial = Serial1;
+double latitude;
+double longitude;
+uint32_t timer = millis();
+boolean usingInterrupt = false;
+void useInterrupt(boolean);
 
 /* Core system functions */
 
@@ -64,14 +90,32 @@ void setup()
   Wire.begin(4);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
+  Serial.print("I2C: OK \n");
+  
   // Serial
   Serial.begin(9600);           // start serial for output
+  Serial.print("Serial: OK \n");
+  
   // Radar
   pinMode(radarTrigPin, OUTPUT); // trig pin as output
   pinMode(radarEchoPin, INPUT); // echo pin as input
   radarServo.attach(12);
   radarServo.write(90);
+  
+  // Ultrasonic
+  pinMode(rangeTrigPin, OUTPUT);
+  pinMode(rangeEchoPin, INPUT);
+  Serial.print("Radar: OK \n");
 
+  // GPS
+  GPS.begin(9600);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+  GPS.sendCommand(PGCMD_ANTENNA);
+  useInterrupt(true);
+  Serial.print("GPS: OK \n");
+
+  // Ready
   Serial.print("* * * READY * * * \n");
 }
 
@@ -88,6 +132,15 @@ void loop()
     lastActuationCmd = 0;
     actuationCmd = 0;
   }
+
+  // Radar
+  long rangeDuration;
+  long rangeDistance;
+  int averageDistance = 0;
+  radarScan();
+
+  // GPS
+  gpsLoop();
 }
 
 /* I2C cimmunication handlers */
@@ -269,7 +322,11 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
   long distance;
     
   for (radar_angle = 0; radar_angle <= 180; radar_angle = radar_angle + 10){ 
-    radarServo.write(radar_angle);   
+    radarServo.write(radar_angle); 
+    
+    pos = radar_angle/10;  
+    maparray [prevX[pos]][prevY[pos]] = false;
+    
     digitalWrite(radarTrigPin, LOW);
     delayMicroseconds(2);
     digitalWrite(radarTrigPin, HIGH);
@@ -277,38 +334,27 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
     digitalWrite(radarTrigPin, LOW);
     duration = pulseIn(radarEchoPin, HIGH);
     distance = microsecondsToCentimeters(duration);
+    
     if(distance<200){
       Serial.print("Object Detected at an angle = ");
       actual_radar_angle = radarServo.read();
+
+      // Store
+      Xaxis = (distance * sin(actual_radar_angle) + 50) / 5;           // get x coordinate according to trigonometry (+50 for placement along the axis)
+      Yaxis = (distance * cos(actual_radar_angle)) / 5;                // get y coordinate ''
+      maparray [Xaxis][Yaxis] = true;                                    // place obstacle in map array
+      prevX[pos] = Xaxis;                                                // store coordinates in array according to servo position
+      prevY[pos] = Yaxis;
+
+      // Print
       Serial.print(actual_radar_angle);
       Serial.print(" deg and distance = ");
       Serial.print(distance);
       Serial.print(" cm");
       Serial.println();
     }
-    delay(500);
-  }  
-
-  for (radar_angle = 180; radar_angle >=0; radar_angle = radar_angle - 10){ 
-    radarServo.write(radar_angle);    
-    digitalWrite(radarTrigPin, LOW);
-    delayMicroseconds(2);
-    digitalWrite(radarTrigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(radarTrigPin, LOW);
-    duration = pulseIn(radarEchoPin, HIGH);   
-    distance = microsecondsToCentimeters(duration);
-    if(distance < 200){
-         Serial.print("Object Detected at an angle = ");
-         actual_radar_angle = radarServo.read();
-         Serial.print(actual_radar_angle);
-         Serial.print(" deg and distance = ");
-         Serial.print(distance);
-         Serial.print(" cm");
-         Serial.println();
-    }
-    delay(500);
-  } 
+    delay(200);
+  }   
  }
 
 /**
@@ -318,3 +364,64 @@ long microsecondsToCentimeters(long us){
   return us / 58;
 }
 
+/* GPS */
+
+SIGNAL(TIMER0_COMPA_vect) {
+  char c = GPS.read();
+#ifdef UDR0
+  if (GPSECHO)
+    if (c) UDR0 = c;  
+#endif
+}
+
+void useInterrupt(boolean v) {
+  if (v) {
+    OCR0A = 0xAF;
+    TIMSK0 |= _BV(OCIE0A);
+    usingInterrupt = true;
+  } else {
+    TIMSK0 &= ~_BV(OCIE0A);
+    usingInterrupt = false;
+  }
+}
+
+void gpsLoop()                     // run over and over again
+{
+  if (! usingInterrupt) {
+    char c = GPS.read();
+    if (GPSECHO)
+      if (c){
+        //Serial.print(c);
+      }
+  }
+
+  if (GPS.newNMEAreceived()) {
+    if (!GPS.parse(GPS.lastNMEA()))
+      return;
+  }
+
+  if (timer > millis())  timer = millis();
+
+  if (millis() - timer > 2000) { 
+    timer = millis(); // reset the timer
+    Serial.println("Location: ");
+    Serial.println("");
+    Serial.println(GPSlatitude (), 4);
+    Serial.println(GPSlongitude (), 4);
+    Serial.println("");
+  }
+}
+
+double GPSlatitude (){
+  if (GPS.fix) {
+    return GPS.latitudeDegrees;
+  }
+  return 0;
+}
+
+double GPSlongitude (){
+  if (GPS.fix) {
+    return GPS.longitudeDegrees;
+  }
+  return 0;
+}

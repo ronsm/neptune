@@ -32,10 +32,19 @@ int level7 = 55;
 int level8 = 56;
 int level9 = 57;
 
-int outpin    = 3;
+#include <Servo.h>
+
+//Servo esc1;
+Servo esc2;
 
 void setup() {
         Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
+          //esc1.attach(3);
+          esc2.attach(6);
+
+          //esc1.write(0);
+          esc2.write(20);
+          delay(1000);
 }
 
 void loop() {
@@ -56,63 +65,72 @@ void loop() {
         {
           Serial.print("Speed Level 1");
           Serial.print("\n");
-          analogWrite(outpin, 0);
+          //analogWrite(outpin, 1);
+          esc2.write(1);
         }
 
         if (incomingByte == level2)
         {
           Serial.print("Speed Level 2");
           Serial.print("\n");
-          analogWrite(outpin, 32);
+          //analogWrite(outpin, 32);
+          esc2.write(20);
         }
 
         if (incomingByte == level3)
         {
           Serial.print("Speed Level 3");
           Serial.print("\n");
-          analogWrite(outpin, 64);
+          //analogWrite(outpin, 64);
+          esc2.write(40);
         }
 
         if (incomingByte == level4)
         {
           Serial.print("Speed Level 4");
           Serial.print("\n");
-          analogWrite(outpin, 96);
+          //analogWrite(outpin, 96);
+          esc2.write(60);
         }
 
         if (incomingByte == level5)
         {
           Serial.print("Speed Level 5");
           Serial.print("\n");
-          analogWrite(outpin, 128);
+          //analogWrite(outpin, 128);
+          esc2.write(80);
         }
 
         if (incomingByte == level6)
         {
           Serial.print("Speed Level 6");
           Serial.print("\n");
-          analogWrite(outpin, 160);
+          //analogWrite(outpin, 160);
+          esc2.write(100);
         }
 
         if (incomingByte == level7)
         {
           Serial.print("Speed Level 7");
           Serial.print("\n");
-          analogWrite(outpin, 192);
+          //analogWrite(outpin, 192);
+          esc2.write(120);
         }
 
         if (incomingByte == level8)
         {
           Serial.print("Speed Level 8");
           Serial.print("\n");
-          analogWrite(outpin, 224);
+          //analogWrite(outpin, 224);
+          esc2.write(140);
         }
 
         if (incomingByte == level9)
         {
           Serial.print("Speed Level 9");
           Serial.print("\n");
-          analogWrite(outpin, 255);
+          //analogWrite(outpin, 255);
+          esc2.write(179);
         }
 
 }

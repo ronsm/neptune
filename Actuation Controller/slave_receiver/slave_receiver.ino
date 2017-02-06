@@ -1,30 +1,27 @@
-// Wire Slave Receiver
-// by Nicholas Zambetti <http://www.zambetti.com>
-
-// Demonstrates use of the Wire library
-// Receives data as an I2C/TWI slave device
-// Refer to the "Wire Master Writer" example for use with this
-
-// Created 29 March 2006
-
-// This example code is in the public domain.
-
-
 #include <Wire.h>
+#include <Servo.h>
 
 int level1 = 2;
 int level2 = 1;
 
-int outpin    = 3;
+Servo esc1;
+Servo esc2;
+Servo rudder;
+Servo radar;
+
 
 void setup()
 {
   Wire.begin(3);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent); // register event
   Serial.begin(9600);           // start serial for output
-  analogWrite(outpin, 0);
-  
-  analogWrite(outpin, 250);
+
+  esc1.attach(3);
+  esc2.attach(6);
+
+  esc1.write(0);
+  esc2.write(20);
+  delay(1000);
 
 }
 
@@ -50,14 +47,14 @@ void receiveEvent(int howMany)
         {
           Serial.print("Motors OFF");
           Serial.print("\n");
-          analogWrite(outpin, 1);
+          esc2.write(20);
         }
         
           if (x == level2)
         {
           Serial.print("Motors ON");
           Serial.print("\n");
-          analogWrite(outpin, 100);
+          esc2.write(100);
         }
   
 }

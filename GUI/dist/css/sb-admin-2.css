@@ -39,6 +39,10 @@ button.style_1{
   float: none;
   text-align: center;
   margin: 0px auto 0px auto;
+  background-color: grey;
+  border: none;
+  text-decoration: none;
+  color: white;
 }
 
 .button-center{

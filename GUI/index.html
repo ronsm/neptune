@@ -63,21 +63,112 @@
          	$('#LOG').keypress(function(e){
          	  socket.emit('client_data', {'letter': String.fromCharCode(e.charCode)});
          	});
-         });
-
+         }); 
+		 
+		 <!-- POWER MANAGEMENT -->
          $(document).off('click', '#ON').on('click', '#ON', function (e) {
-             console.log('click');
+             console.log('power on');
+             
+             $("#ON").prop("disabled", true);
+             $("#OFF").prop("disabled", false);
+             $("#ON").css('background-color', '#1CC6FF');
+             $("#OFF").css('background-color', 'grey');
 
              socket.emit('powerOnCmd', {command: 'power_on'});
              e.preventDefault();
          });
 
          $(document).off('click', '#OFF').on('click', '#OFF', function (e) {
-             console.log('click');
+             console.log('power off');
+             
+             $("#OFF").prop("disabled", true);
+             $("#ON").prop("disabled", false);
+             $("#OFF").css('background-color', '#1CC6FF');
+             $("#ON").css('background-color', 'grey');
 
              socket.emit('powerOffCmd', {command: 'power_off'});
              e.preventDefault();
          });
+
+		<!-- MODE SELECTION -->
+		$(document).off('click', '#AUTO').on('click', '#AUTO', function (e) {
+             console.log('mode: auto');
+             
+             $("#AUTO").prop("disabled", true);
+             $("#MANUAL").prop("disabled", false);
+             $("#AUTO").css('background-color', '#1CC6FF');
+             $("#MANUAL").css('background-color', 'grey');
+
+             socket.emit('modeSelAuto', {command: 'mode_sel_auto'});
+             e.preventDefault();
+         });
+
+         $(document).off('click', '#MANUAL').on('click', '#MANUAL', function (e) {
+             console.log('mode: manual');
+             
+             $("#MANUAL").prop("disabled", true);
+             $("#AUTO").prop("disabled", false);
+             $("#MANUAL").css('background-color', '#1CC6FF');
+             $("#AUTO").css('background-color', 'grey');
+
+             socket.emit('modeSelManual', {command: 'mode_sel_manual'});
+             e.preventDefault();
+         });
+         
+         $(document).off('click', '#INDOOR').on('click', '#INDOOR', function (e) {
+             console.log('mode: indoor');
+             
+             $("#INDOOR").prop("disabled", true);
+             $("#OUTDOOR").prop("disabled", false);
+             $("#INDOOR").css('background-color', '#1CC6FF');
+             $("#OUTDOOR").css('background-color', 'grey');
+
+             socket.emit('modeSelIndoor', {command: 'mode_sel_indoor'});
+             e.preventDefault();
+         });
+
+         $(document).off('click', '#OUTDOOR').on('click', '#OUTDOOR', function (e) {
+             console.log('mode: outdoor');
+             
+             $("#OUTDOOR").prop("disabled", true);
+             $("#INDOOR").prop("disabled", false);
+             $("#OUTDOOR").css('background-color', '#1CC6FF');
+             $("#INDOOR").css('background-color', 'grey');
+
+
+             socket.emit('modeSelOutdoor', {command: 'mode_sel_outdoor'});
+             e.preventDefault();
+         });
+         
+         <!-- MANUAL CONTROLS -->
+         
+         $(document).off('click', '#FORWARD').on('click', '#FORWARD', function (e) {
+             console.log('nav: forward');
+
+             socket.emit('navManForward', {command: 'nav_man_forward'});
+             e.preventDefault();
+         });
+         
+         $(document).off('mouseup', '#RUDDER_POS').on('click', '#RUDDER_POS', function (e) {
+             console.log('rudder pos');
+             
+             var rudder = $('#RUDDER_POS').val();
+             console.log(rudder);
+
+             socket.emit('navManRudder', rudder);
+             e.preventDefault();
+         });
+         
+         $(document).off('mouseup', '#SPEED_POS').on('click', '#SPEED_POS', function (e) {
+             console.log('speed pos');
+             
+             var speed = $('#SPEED_POS').val();
+             console.log(speed);
+
+             socket.emit('navManSpeed', speed);
+             e.preventDefault();
+         });
+		
 
          socket.on('logWrite', function(logReceive){
              var today = new Date();

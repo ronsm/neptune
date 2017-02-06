@@ -63,7 +63,7 @@ server = http.createServer(function (request, response) {
             }
             else {
                 response.writeHead(500);
-                response.end('Sorry, check with the site admin for error: '+error.code+' ..\n');
+                response.end('CONTACT ADMIN '+error.code+' ..\n');
                 response.end(); 
             }
         }
@@ -99,69 +99,201 @@ io.sockets.on('connection', function(socket){
         process.stdout.write(data.letter);
     });
 
+	// POWER MANAGEMENT
     socket.on('powerOnCmd', function(command){
-	console.log(command);
-	device1.writeByte(1, function(err) { console.log("error"); console.log(err); });
+		console.log(command);
+		device1.writeByte(1, function(err) { console.log("error"); console.log(err); });
 
-	newCommand = 1;
+		newCommand = 1;
     });
 
     socket.on('powerOffCmd', function(command){
-	console.log(command);
-	device1.writeByte(2, function(err) { console.log("error"); console.log(err); });
+		console.log(command);
+		device1.writeByte(2, function(err) { console.log("error"); console.log(err); });
 
-	newCommand = 1;
+		newCommand = 1;
     });
     
+    // MODE SELECTION
+    socket.on('modeSelAuto', function(command){
+		console.log(command);
+		device1.writeByte(10, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+
+    socket.on('modeSelManual', function(command){
+		console.log(command);
+		device1.writeByte(11, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+    
+    socket.on('modeSelIndoor', function(command){
+		console.log(command);
+		device1.writeByte(12, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+
+    socket.on('modeSelOutdoor', function(command){
+		console.log(command);
+		device1.writeByte(13, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+    
+    // MANUAL CONTROLS
+    
+    socket.on('navManForward', function(command){
+		console.log(command);
+		device1.writeByte(100, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+    
+    socket.on('navManRudder', function(command){
+		var commandInt = command.toString();
+		
+		var commandAdjusted;
+		
+		if(commandInt == 0){
+			commandAdjusted = 101;
+		}
+		if(commandInt == 1){
+			commandAdjusted = 102;
+		}
+		if(commandInt == 2){
+			commandAdjusted = 103;
+		}
+		if(commandInt == 3){
+			commandAdjusted = 104;
+		}
+		if(commandInt == 4){
+			commandAdjusted = 105;
+		}
+		if(commandInt == 5){
+			commandAdjusted = 106;
+		}
+		if(commandInt == 6){
+			commandAdjusted = 107;
+		}
+		if(commandInt == 7){
+			commandAdjusted = 108;
+		}
+		if(commandInt == 8){
+			commandAdjusted = 109;
+		}
+		if(commandInt == 9){
+			commandAdjusted = 110;
+		}
+		if(commandInt == 10){
+			commandAdjusted = 111;
+		}
+		else{
+			commandAdjusted = 112;
+		}
+		
+		console.log(command);
+		console.log('rudder position:');
+		console.log(commandAdjusted);
+		
+		device1.writeBytes('', commandAdjusted, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+    
+    socket.on('navManSpeed', function(command){
+		var commandInt = command.toString();
+		
+		var commandAdjusted;
+		
+		if(commandInt == 0){
+			commandAdjusted = 120;
+		}
+		if(commandInt == 1){
+			commandAdjusted = 121;
+		}
+		if(commandInt == 2){
+			commandAdjusted = 122;
+		}
+		if(commandInt == 3){
+			commandAdjusted = 123;
+		}
+		if(commandInt == 4){
+			commandAdjusted = 124;
+		}
+		if(commandInt == 5){
+			commandAdjusted = 125;
+		}
+		if(commandInt == 6){
+			commandAdjusted = 126;
+		}
+		if(commandInt == 7){
+			commandAdjusted = 127;
+		}
+		if(commandInt == 8){
+			commandAdjusted = 128;
+		}
+		if(commandInt == 9){
+			commandAdjusted = 129;
+		}
+		else{
+			commandAdjusted = 130;
+		}
+		
+		console.log(command);
+		console.log('rudder position:');
+		console.log(commandAdjusted);
+		
+		device1.writeBytes('', commandAdjusted, function(err) { console.log("error"); console.log(err); });
+
+		newCommand = 1;
+    });
+    
+    // MAP MANAGEMENT
+    
     socket.on('submitCoordCmd', function(command){
-	
-	//var commandString = command.toString();	
-    //var coordArr = [];
-    //var i;
-    //coordArr[0] = 3;
-    //for(i = 1; i < 42; i++){
-	//	coordArr[i] = commandString.charAt(i);
-	
-	var commandString = command.toString();
-	console.log(commandString);
+		var commandString = command.toString();
+		console.log(commandString);
 
-	var commandStringSplit = command.split(',');
-	var commandStringLeft = commandStringSplit[0].toString();
-	var commandStringRight = commandStringSplit[1].toString();
-	
-	commandStringLeft = commandStringLeft.substr(1);
-	commandStringRight = commandStringRight.substr(1);
-	commandStringRightFinal = commandStringRight.substr(0, commandStringRight.length - 1);
-	
-	console.log(commandStringLeft);
-	console.log(commandStringRightFinal);
-	
-	var coordLength = 10;
-	var commandStringLeftShort = commandStringLeft.substring(0, coordLength);
-	var commandStringRightShort = commandStringRightFinal.substring(0, coordLength);
-	
-	var commandStringCombined = commandStringLeftShort.concat(","+commandStringRightShort);
-	
-	commandChars = commandStringCombined.split('');
-	console.log(commandChars);
-	
-	device1.writeBytes('CHANGE_ME', commandChars, function(err) { console.log("error"); console.log(err); });
+		var commandStringSplit = command.split(',');
+		var commandStringLeft = commandStringSplit[0].toString();
+		var commandStringRight = commandStringSplit[1].toString();
+		
+		commandStringLeft = commandStringLeft.substr(1);
+		commandStringRight = commandStringRight.substr(1);
+		commandStringRightFinal = commandStringRight.substr(0, commandStringRight.length - 1);
+		
+		console.log(commandStringLeft);
+		console.log(commandStringRightFinal);
+		
+		var coordLength = 10;
+		var commandStringLeftShort = commandStringLeft.substring(0, coordLength);
+		var commandStringRightShort = commandStringRightFinal.substring(0, coordLength);
+		
+		var commandStringCombined = commandStringLeftShort.concat(","+commandStringRightShort);
+		
+		commandChars = commandStringCombined.split('');
+		console.log(commandChars);
+		
+		device1.writeBytes('CHANGE_ME', commandChars, function(err) { console.log("error"); console.log(err); });
 
-	newCommand = 1;
+		newCommand = 1;
     });
 
     socket.on('logUpdate', function(logMsg){
-	if(newCommand == 0){
-		return;
-	}
+		if(newCommand == 0){
+			return;
+		}
 
-	var incomingMsg = device1.readBytes('acknowledgeCmd', 16, function(err, res) {});
+		var incomingMsg = device1.readBytes('acknowledgeCmd', 16, function(err, res) {});
 
-        interpretMsg(incomingMsg);
-        interprettedMsg = interprettedMsg + "\n";
-        io.emit('logWrite', interprettedMsg);
+			interpretMsg(incomingMsg);
+			interprettedMsg = interprettedMsg + "\n";
+			io.emit('logWrite', interprettedMsg);
 
-	newCommand = 0;
+		newCommand = 0;
     });
 
 });
