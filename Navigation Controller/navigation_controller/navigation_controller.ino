@@ -63,7 +63,7 @@ int radar_angle = 0;
 int actual_radar_angle;
 
 // Mapping
-bool maparray[50][50];    
+bool maparray[50][25];    
 int prevX[20];                 
 int prevY[20];
 int pos;
@@ -340,8 +340,8 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
       actual_radar_angle = radarServo.read();
 
       // Store
-      Xaxis = (distance * sin(actual_radar_angle) + 50) / 5;           // get x coordinate according to trigonometry (+50 for placement along the axis)
-      Yaxis = (distance * cos(actual_radar_angle)) / 5;                // get y coordinate ''
+      Xaxis = (distance * sin(actual_radar_angle) + 25) / 10;           // get x coordinate according to trigonometry (+50 for placement along the axis)
+      Yaxis = (distance * cos(actual_radar_angle)) / 10;                // get y coordinate ''
       maparray [Xaxis][Yaxis] = true;                                    // place obstacle in map array
       prevX[pos] = Xaxis;                                                // store coordinates in array according to servo position
       prevY[pos] = Yaxis;
