@@ -53,10 +53,6 @@ const float pi = 3.14159;
 const int radarTrigPin = 22;
 const int radarEchoPin = 23;
 
-// Ultrasonic rangefinder
-const int rangeTrigPin = 10;
-const int rangeEchoPin = 11;
-
 // Radar
 Servo radarServo;
 int radar_angle = 0;
@@ -69,6 +65,7 @@ int prevY[20];
 int pos;
 int Xaxis;
 int Yaxis;
+int radarDistances[18];
 
 // GPS
 Adafruit_GPS GPS(&Serial1);
@@ -93,7 +90,7 @@ void setup()
   Serial.print("I2C: OK \n");
   
   // Serial
-  Serial.begin(9600);           // start serial for output
+  Serial.begin(57600);           // start serial for output
   Serial.print("Serial: OK \n");
   
   // Radar
@@ -101,10 +98,6 @@ void setup()
   pinMode(radarEchoPin, INPUT); // echo pin as input
   radarServo.attach(12);
   radarServo.write(90);
-  
-  // Ultrasonic
-  pinMode(rangeTrigPin, OUTPUT);
-  pinMode(rangeEchoPin, INPUT);
   Serial.print("Radar: OK \n");
 
   // GPS
@@ -335,27 +328,91 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
     duration = pulseIn(radarEchoPin, HIGH);
     distance = microsecondsToCentimeters(duration);
     
-    if(distance<200){
-      Serial.print("Object Detected at an angle = ");
-      actual_radar_angle = radarServo.read();
+    Serial.print("Object Detected at an angle = ");
 
-      // Store
-      Xaxis = (distance * sin(actual_radar_angle) + 25) / 10;           // get x coordinate according to trigonometry (+50 for placement along the axis)
-      Yaxis = (distance * cos(actual_radar_angle)) / 10;                // get y coordinate ''
-      maparray [Xaxis][Yaxis] = true;                                    // place obstacle in map array
-      prevX[pos] = Xaxis;                                                // store coordinates in array according to servo position
-      prevY[pos] = Yaxis;
+    // Store
+    Xaxis = (distance * sin(radar_angle) + 25) / 10;           // get x coordinate according to trigonometry (+50 for placement along the axis)
+    Yaxis = (distance * cos(radar_angle)) / 10;                // get y coordinate ''
+    maparray [Xaxis][Yaxis] = true;                            // place obstacle in map array
+    prevX[pos] = Xaxis;                                        // store coordinates in array according to servo position
+    prevY[pos] = Yaxis;
 
-      // Print
-      Serial.print(actual_radar_angle);
+    if(distance < 200){
+      radarDistances[(radar_angle/10)] = distance;
+      Serial.print(radar_angle);
       Serial.print(" deg and distance = ");
       Serial.print(distance);
       Serial.print(" cm");
       Serial.println();
     }
+    else{
+      radarDistances[radar_angle/10] = 0;
+      Serial.print(radar_angle);
+      Serial.print(" deg and distance = ");
+      Serial.print("OUT OF RANGE");
+      Serial.println();
+    }
     delay(200);
-  }   
- }
+  }
+  
+  radarPrintDistances();
+  
+  radarCalcDirection();
+}
+
+/**
+ * Prints the current set of distances from 0-180*.
+ */
+void radarPrintDistances(){
+  Serial.print("\n");
+  for(int i = 0; i <= 18; i++){
+    Serial.print(radarDistances[i]);
+    Serial.print("\t");
+  }
+  Serial.print("\n");
+  return;
+}
+
+/**
+ * Calculates best direction of travel based on obstacles detected by scanning radar.
+ */
+void radarCalcDirection(){
+  int possibleDirection  = 0;
+  int bestPossibleDirection = 0;
+  int radarClear = 0;
+  int bestRadarClear = 0;
+  bool directionFound = false;
+  bool clearDirections[18];
+  
+  for(int i = 0; i <= 18; i++){
+    if(radarDistances[i] >= 60){
+      clearDirections[i] = true;
+    }
+    else{
+      clearDirections[i] = false;
+    }
+  }
+
+  for(int i = 0; i <= 16; i++){
+    if((clearDirections[i] == true) && (clearDirections[i+1] == true) && (clearDirections[i+2] == true)){
+      directionFound = true;
+      possibleDirection = ((i+1)*10);
+      radarClear = radarDistances[i+1];
+      if(radarClear > bestRadarClear){
+        bestPossibleDirection = possibleDirection;
+        bestRadarClear = radarClear;
+      }
+    }
+  }
+
+  if(directionFound == false){
+    bestPossibleDirection = -1;
+  }
+  
+  Serial.print("Best direction to navigate: ");
+  Serial.print(bestPossibleDirection);
+  Serial.print("\n");
+}
 
 /**
  * Helper function to convert time into distance travelled.
