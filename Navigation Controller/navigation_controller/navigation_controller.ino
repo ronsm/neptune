@@ -11,8 +11,9 @@
  * https://creativecommons.org/licenses/by-nc/4.0/.
  *
  * @package    Neptune
- * @author     Ronnie Smith <ronniesmith@outlook.com>
- * @copyright  2017, Ronnie Smith
+ * @author(s)  Ronnie Smith <ronniesmith@outlook.com>
+ *             Alex James <english.james@live.fr>
+ * @copyright  2017, Neptune
  * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
@@ -36,6 +37,14 @@
 
 /* Variables */
 
+// Master settings
+bool environmentMode;
+bool controlMode;
+
+// Manual mode
+int rudderPos;
+int speedSel;
+
 // Received command handling
 int lastCommand = 0;
 String lastCoord = "";
@@ -57,6 +66,7 @@ const int radarEchoPin = 23;
 Servo radarServo;
 int radar_angle = 0;
 int actual_radar_angle;
+int bestPossibleDirection = 0;
 
 // Mapping
 bool maparray[50][25];    
@@ -108,6 +118,12 @@ void setup()
   useInterrupt(true);
   Serial.print("GPS: OK \n");
 
+  // Safety
+  environmentMode = false;
+  controlMode = false;
+  rudderPos = 6;
+  speedSel = 0;
+
   // Ready
   Serial.print("* * * READY * * * \n");
 }
@@ -134,6 +150,8 @@ void loop()
 
   // GPS
   gpsLoop();
+
+  outdoorAutoController();
 }
 
 /* I2C cimmunication handlers */
@@ -151,7 +169,12 @@ void receiveEvent(int byteCount){
   if(byteCount == 1){
     while(Wire.available()) {
       number = Wire.read();
-      
+
+      if(number == 255){
+        Serial.print("RESET \n");
+        lastCommand = number;
+        actuationCmd = number;
+      }
       if(number == 1){
         Serial.print("POWER ON \n");
         lastCommand = number;
@@ -162,13 +185,51 @@ void receiveEvent(int byteCount){
         lastCommand = number;
         actuationCmd = number;
       }
-      if(number == 3){
-        Serial.print("COORDINATE RECEIVED \n");
+      if(number == 10){
+        Serial.print("AUTOMATIC MODE \n");
         lastCommand = number;
-        actuationCmd = number;
+        controlMode = true;
+      }
+      if(number == 11){
+        Serial.print("MANUAL MODE \n");
+        lastCommand = number;
+        controlMode = false;
+      }
+      if(number == 12){
+        Serial.print("INDOOR MODE \n");
+        lastCommand = number;
+        environmentMode = true;
+      }
+      if(number == 13){
+        Serial.print("OUTDOOR MODE \n");
+        lastCommand = number;
+        environmentMode = false;
+      }
+      if(number == 100){
+        Serial.print("FORWARD 1U \n");
+        lastCommand -number;
+      }
+      if(number >= 101 && number <= 111){
+        Serial.print("RUDDER POS:");
+        lastCommand = number;
+        rudderPos = 101 - number;
+        Serial.print(rudderPos);
+        Serial.print("\n");
+      }
+      if(number >= 120 && number <= 129){
+        Serial.print("MOTOR SPEED: ");
+        lastCommand = number;
+        speedSel = 120 - number;
+        Serial.print(speedSel);
+        Serial.print("\n");
+      }
+      if(number == 140){
+        Serial.print("COORDINATE INCOMING \n");
+        lastCommand = number;
       }
     }
   }
+  
   if(byteCount > 20){
     while (1 < Wire.available()) { // loop through all but the last
       int c = Wire.read(); // receive byte as a character
@@ -196,7 +257,7 @@ void requestEvent(){
     case 2:
       Wire.write("Shutting down...");
       break;
-    case 3:
+    case 140:
       Wire.write("Coord. received!");
       break;
     default: 
@@ -217,15 +278,47 @@ void outdoorAutoController(){
   coord currentPosition, destinationPosition;
   
   currentPosition = getCurrentPosition();
-  destinationHeading = getDestinationHeading(&currentPosition, &destinationPosition);
+  destinationPosition = getDestinationPosition();
+
   currentHeading = getCurrentHeading();
+  destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
+  
   calcMoveToHeading(destinationHeading, currentHeading);
 }
 
+/**
+ * Retreives the current position from the GPS module.
+ */
 coord getCurrentPosition(){
   coord currentPosition;
+  
+  currentPosition.lat = 56.191834;
+  currentPosition.lon = -3.145690;
 
   return currentPosition;
+}
+
+/**
+ * Retreives the destination coordinates. 
+ */
+coord getDestinationPosition(){
+  coord destinationPosition;
+  
+  destinationPosition.lat = 56.160074;
+  destinationPosition.lon = -3.072013;
+
+  return destinationPosition;
+}
+
+/**
+ * Retreives the vehicles current heading from the IMU compass. 
+ */
+double getCurrentHeading(){
+  int currentHeading;
+
+  currentHeading = 180;
+
+  return currentHeading;
 }
 
 /**
@@ -264,13 +357,6 @@ double getDestinationHeading(coord* currentPosition, coord* destinationPosition)
 }
 
 /**
- * Retreives the vehicles current heading from the IMU compass. 
- */
-double getCurrentHeading(){
-  return 0;
-}
-
-/**
  * Determine the number of degrees to turn and in which direction.
  */
 void calcMoveToHeading(double destinationHeading, double currentHeading){
@@ -297,8 +383,14 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
 
   if(turnLeftNotRight == false){
     //turnRight(degTurn);
+    Serial.print("Turning left: ");
+    Serial.print(degTurn);
+    Serial.print("\n");
   }
   if(turnLeftNotRight == true){
+    Serial.print("Turning right: ");
+    Serial.print(degTurn);
+    Serial.print("\n");
     //turnLeft(degTurn);
   }
 
@@ -378,11 +470,11 @@ void radarPrintDistances(){
  */
 void radarCalcDirection(){
   int possibleDirection  = 0;
-  int bestPossibleDirection = 0;
   int radarClear = 0;
   int bestRadarClear = 0;
   bool directionFound = false;
   bool clearDirections[18];
+  bestPossibleDirection = 0;
   
   for(int i = 0; i <= 18; i++){
     if(radarDistances[i] >= 60){
