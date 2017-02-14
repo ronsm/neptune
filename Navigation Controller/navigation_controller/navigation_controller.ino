@@ -31,6 +31,9 @@
 #include <Servo.h>
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
+#include <MPU9250.h>
+#include <quaternionFilters.h>
+#include <SPI.h>
 
 /* Definitions */
 #define GPSECHO true

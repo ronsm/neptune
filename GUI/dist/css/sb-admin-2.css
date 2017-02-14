@@ -20,6 +20,15 @@ body {
  width: 100%;
 }
 
+div.camera{
+	text-align: center;
+	width: 100%;
+}
+
+iframe{
+	width: 100%;
+}
+
 @media (min-width: 768px) {
   #page-wrapper {
     position: inherit;

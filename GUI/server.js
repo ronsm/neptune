@@ -1,3 +1,27 @@
+/*
+ * server.js
+ *
+ * This is the Node application responsible for providing communication
+ * between the HTML-based GUI and the hardware of the Raspberry Pi, including
+ * the I2C and GPIO functionality.
+ *
+ * LICENSE: This source file is subject to a Creative Commons
+ * Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+ * Full details of this license are available online at:
+ * https://creativecommons.org/licenses/by-nc/4.0/.
+ *
+ * @package    Neptune
+ * @author     Ronnie Smith <ronniesmith@outlook.com>
+ * @copyright  2017, Ronnie Smith
+ * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
+ * @version    1.0
+ * @link       https://github.com/ronsm/neptune
+ *
+ * ATTRIBUTIONS: This project uses and derives open source code and packages from
+ * various authors, which are attributed here where possible.
+ *    1) N/A
+ */
+
 var http = require('http');
 var url = require('url');
 var fs = require('fs');
