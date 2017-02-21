@@ -1,4 +1,0 @@
-Commands to run in this folder:
-npm install i2c
-npm install socket.io
-npm install express
