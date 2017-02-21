@@ -1,0 +1,753 @@
+<!--
+ * index.html
+ *
+ * This is the primary source file for Neptune's GUI. It provides a user
+ * friendly interface that allows a user to use their own device
+ * to remotely control the hovercraft.
+ *
+ * LICENSE: This source file is subject to a Creative Commons
+ * Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+ * Full details of this license are available online at:
+ * https://creativecommons.org/licenses/by-nc/4.0/.
+ *
+ * @package    Neptune
+ * @author     Ronnie Smith <ronniesmith@outlook.com>
+ * @copyright  2017, Ronnie Smith
+ * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
+ * @version    1.0
+ * @link       https://github.com/ronsm/neptune
+ *
+ * ATTRIBUTIONS: This project uses and derives open source code and packages from
+ * various authors, which are attributed here where possible.
+ *    1) Theme: "SB Admin 2" by Blackrock Digital
+ *       https://startbootstrap.com/template-overviews/sb-admin-2/
+ -->
+
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      <title>Dashboard | Neptune</title>
+      <!-- Bootstrap Core CSS -->
+      <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+      <!-- MetisMenu CSS -->
+      <link href="vendor/metisMenu/metisMenu.min.css" rel="stylesheet">
+      <!-- Custom CSS -->
+      <link href="dist/css/sb-admin-2.css" rel="stylesheet">
+      <!-- Morris Charts CSS -->
+      <link href="vendor/morrisjs/morris.css" rel="stylesheet">
+      <!-- Custom Fonts -->
+      <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+      <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+      <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+      <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+      <![endif]-->
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="vendor/jquery/jquery.js"></script>
+   </head>
+   <body>
+      <script>
+         var socket = io.connect();
+
+         socket.on('date', function(data){
+           $('#date').text(data.date);
+         });
+
+         $(document).ready(function(){
+         	$('#LOG').keypress(function(e){
+         	  socket.emit('client_data', {'letter': String.fromCharCode(e.charCode)});
+         	});
+         }); 
+		 
+		 <!-- POWER MANAGEMENT -->
+         $(document).off('click', '#ON').on('click', '#ON', function (e) {
+             console.log('power on');
+             
+             $("#ON").prop("disabled", true);
+             $("#OFF").prop("disabled", false);
+             $("#ON").css('background-color', '#1CC6FF');
+             $("#OFF").css('background-color', 'grey');
+
+             socket.emit('powerOnCmd', {command: 'power_on'});
+             e.preventDefault();
+         });
+
+         $(document).off('click', '#OFF').on('click', '#OFF', function (e) {
+             console.log('power off');
+             
+             $("#OFF").prop("disabled", true);
+             $("#ON").prop("disabled", false);
+             $("#OFF").css('background-color', '#1CC6FF');
+             $("#ON").css('background-color', 'grey');
+
+             socket.emit('powerOffCmd', {command: 'power_off'});
+             e.preventDefault();
+         });
+
+		<!-- MODE SELECTION -->
+		$(document).ready(function(){
+			 <!-- POWER OFF BY DEFAULT -->
+			 $("#OFF").prop("disabled", true);
+             $("#ON").prop("disabled", false);
+             $("#OFF").css('background-color', '#1CC6FF');
+             $("#ON").css('background-color', 'grey');
+			 
+			 <!-- MANUAL MODE BY DEFAULT -->
+             $("#MANUAL").prop("disabled", true);
+             $("#AUTO").prop("disabled", false);
+             $("#MANUAL").css('background-color', '#1CC6FF');
+             $("#AUTO").css('background-color', 'grey');
+             
+             <!-- OUTDOOR MODE BY DEFAULT -->
+             $("#OUTDOOR").prop("disabled", true);
+             $("#INDOOR").prop("disabled", false);
+             $("#OUTDOOR").css('background-color', '#1CC6FF');
+             $("#INDOOR").css('background-color', 'grey');
+             $("#NAV_OUTDOOR").show();
+             $("#NAV_INDOOR").hide();
+		});
+		
+		$(document).off('click', '#AUTO').on('click', '#AUTO', function (e) {
+             console.log('mode: auto');
+             
+             $("#AUTO").prop("disabled", true);
+             $("#MANUAL").prop("disabled", false);
+             $("#AUTO").css('background-color', '#1CC6FF');
+             $("#MANUAL").css('background-color', 'grey');
+             $("#MANUAL_CONTROLS").hide();
+
+             socket.emit('modeSelAuto', {command: 'mode_sel_auto'});
+             e.preventDefault();
+         });
+
+         $(document).off('click', '#MANUAL').on('click', '#MANUAL', function (e) {
+             console.log('mode: manual');
+             
+             $("#MANUAL").prop("disabled", true);
+             $("#AUTO").prop("disabled", false);
+             $("#MANUAL").css('background-color', '#1CC6FF');
+             $("#AUTO").css('background-color', 'grey');
+             $("#MANUAL_CONTROLS").show();
+
+             socket.emit('modeSelManual', {command: 'mode_sel_manual'});
+             e.preventDefault();
+         });
+         
+         $(document).off('click', '#INDOOR').on('click', '#INDOOR', function (e) {
+             console.log('mode: indoor');
+             
+             $("#INDOOR").prop("disabled", true);
+             $("#OUTDOOR").prop("disabled", false);
+             $("#INDOOR").css('background-color', '#1CC6FF');
+             $("#OUTDOOR").css('background-color', 'grey');
+             $("#NAV_INDOOR").show();
+             $("#NAV_OUTDOOR").hide();
+
+             socket.emit('modeSelIndoor', {command: 'mode_sel_indoor'});
+             e.preventDefault();
+         });
+
+         $(document).off('click', '#OUTDOOR').on('click', '#OUTDOOR', function (e) {
+             console.log('mode: outdoor');
+             
+             $("#OUTDOOR").prop("disabled", true);
+             $("#INDOOR").prop("disabled", false);
+             $("#OUTDOOR").css('background-color', '#1CC6FF');
+             $("#INDOOR").css('background-color', 'grey');
+             $("#NAV_OUTDOOR").show();
+             $("#NAV_INDOOR").hide();
+
+
+             socket.emit('modeSelOutdoor', {command: 'mode_sel_outdoor'});
+             e.preventDefault();
+         });
+         
+         <!-- MANUAL CONTROLS -->
+         
+         $(document).off('click', '#FORWARD').on('click', '#FORWARD', function (e) {
+             console.log('nav: forward');
+
+             socket.emit('navManForward', {command: 'nav_man_forward'});
+             e.preventDefault();
+         });
+         
+         $(document).off('mouseup', '#RUDDER_POS').on('click', '#RUDDER_POS', function (e) {
+             console.log('rudder pos');
+             
+             var rudder = $('#RUDDER_POS').val();
+             console.log(rudder);
+
+             socket.emit('navManRudder', rudder);
+             e.preventDefault();
+         });
+         
+         $(document).off('mouseup', '#SPEED_POS').on('click', '#SPEED_POS', function (e) {
+             console.log('speed pos');
+             
+             var speed = $('#SPEED_POS').val();
+             console.log(speed);
+
+             socket.emit('navManSpeed', speed);
+             e.preventDefault();
+         });
+		
+
+         socket.on('logWrite', function(logReceive){
+             var today = new Date();
+             var date = today.getDate()+'-'+(today.getMonth()+1)+'-'+today.getFullYear();
+             var time = today.getHours()+':'+today.getMinutes()+':'+today.getSeconds();
+             var logTimeStamp = '['+date+' '+time+']'+' ';
+
+             $('#LOG').append(logTimeStamp);
+             $('#LOG').append(logReceive);
+             var textarea = document.getElementById('LOG');
+             textarea.scrollTop = textarea.scrollHeight;
+         });
+
+         setInterval(function(){
+             socket.emit('logUpdate', "logUpdate");
+         }, 100);
+
+         <!-- MAP -->
+
+         $(document).off('click', '#SUBMIT_COORD').on('click', '#SUBMIT_COORD', function (e) {
+           console.log('click');
+
+           var coord = $("#coord_box").val();
+           var coordString = coord.toString();
+
+           socket.emit('submitCoordCmd', coordString);
+           e.preventDefault();
+         });
+
+         <!-- CAMERA -->
+
+		socket.on('live-stream', function(image) {
+		   $('#stream').attr('src', 'data:image/jpg;base64,' + image);
+		   $('#start').hide();
+		});
+		function startStream() {
+		   socket.emit('start-stream');
+		   $('#start').hide();
+		}
+
+      </script>
+      <div id="wrapper">
+         <!-- Navigation -->
+         <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+            <div class="navbar-header">
+               <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+               <span class="sr-only">Toggle navigation</span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               </button>
+               <a class="navbar-brand" href="index.html"><img src="img/logo.png" width=100px height=25px></img></a>
+            </div>
+            <!-- /.navbar-header -->
+            <ul class="nav navbar-top-links navbar-right">
+               <li class="dropdown">
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                  <i class="fa fa-envelope fa-fw"></i> <i class="fa fa-caret-down"></i>
+                  </a>
+                  <ul class="dropdown-menu dropdown-messages">
+                     <li>
+                        <a href="#">
+                           <div>
+                              <strong>Neptune</strong>
+                              <span class="pull-right text-muted">
+                              <em>Yesterday</em>
+                              </span>
+                           </div>
+                           <div>Welcome to the Neptune Dashboard. To find out more about how to...</div>
+                        </a>
+                     </li>
+                     <li class="divider"></li>
+                     <li>
+                        <a class="text-center" href="#">
+                        <strong>Read All Messages</strong>
+                        <i class="fa fa-angle-right"></i>
+                        </a>
+                     </li>
+                  </ul>
+                  <!-- /.dropdown-messages -->
+               </li>
+               <!-- /.dropdown -->
+               <li class="dropdown">
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                  <i class="fa fa-tasks fa-fw"></i> <i class="fa fa-caret-down"></i>
+                  </a>
+                  <ul class="dropdown-menu dropdown-tasks">
+                     <li>
+                        <a href="#">
+                           <div>
+                              <p>
+                                 <strong>Battery</strong>
+                                 <span class="pull-right text-muted">100% Charged</span>
+                              </p>
+                              <div class="progress progress-striped active">
+                                 <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                                    <span class="sr-only">100% Charged (success)</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </a>
+                     </li>
+                     <li class="divider"></li>
+                     <li>
+                        <a class="text-center" href="#">
+                        <strong>See More Information</strong>
+                        <i class="fa fa-angle-right"></i>
+                        </a>
+                     </li>
+                  </ul>
+                  <!-- /.dropdown-tasks -->
+               </li>
+               <!-- /.dropdown -->
+               <li class="dropdown">
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                  <i class="fa fa-bell fa-fw"></i> <i class="fa fa-caret-down"></i>
+                  </a>
+                  <ul class="dropdown-menu dropdown-alerts">
+                     <li>
+                        <a href="#">
+                           <div>
+                              <i class="fa fa-comment fa-fw"></i> Poor Wireless Connection
+                              <span class="pull-right text-muted small">4 minutes ago</span>
+                           </div>
+                        </a>
+                     </li>
+                     <li class="divider"></li>
+                     <li>
+                        <a class="text-center" href="#">
+                        <strong>See All Alerts</strong>
+                        <i class="fa fa-angle-right"></i>
+                        </a>
+                     </li>
+                  </ul>
+                  <!-- /.dropdown-alerts -->
+               </li>
+               <!-- /.dropdown -->
+               <li class="dropdown">
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                  <i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
+                  </a>
+                  <ul class="dropdown-menu dropdown-user">
+                     <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
+                     </li>
+                     <li class="divider"></li>
+                     <li><a href="login.html"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+                     </li>
+                  </ul>
+                  <!-- /.dropdown-user -->
+               </li>
+               <!-- /.dropdown -->
+            </ul>
+            <!-- /.navbar-top-links -->
+            <div class="navbar-default sidebar" role="navigation">
+               <div class="sidebar-nav navbar-collapse">
+                  <ul class="nav" id="side-menu">
+                     <li>
+                        <a href="index.html"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                     </li>
+                     <li>
+                        <a href="help.html"><i class="fa fa-files-o fa-fw"></i> Help</a>
+                        <!-- /.nav-second-level -->
+                     </li>
+                  </ul>
+               </div>
+               <!-- /.sidebar-collapse -->
+            </div>
+            <!-- /.navbar-static-side -->
+         </nav>
+         <div id="page-wrapper">
+            <div class="row">
+               <div class="col-lg-12">
+                  <h1 class="page-header">Dashboard</h1>
+               </div>
+               <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+               <div class="col-lg-6">
+                  <div class="panel panel-default">
+                     <div class="panel-heading">
+                        <b>Master Controls</b>
+                     </div>
+                     <div class="panel-body" style="text-align: center;">
+                        <p class="style_2">Power Status</p>
+                        <div class="button-center">
+                          <button id="OFF" class="style_1">OFF</button>
+                          <button id="ON" class="style_1">ON</button>
+                        </div>
+
+                        <p class="style_1">Operating Mode</p>
+                        <div class="button-center">
+                          <button id="AUTO" class="style_1">AUTO</button>
+                          <button id="MANUAL" class="style_1">MANUAL</button>
+                        </div>
+
+                        <p class="style_1">Environment Select</p>
+                        <div class="button-center">
+                          <button id="OUTDOOR" class="style_1">OUTDOOR</button>
+                          <button id="INDOOR" class="style_1">INDOOR</button>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="panel panel-default" id="MANUAL_CONTROLS">
+                     <div class="panel-heading">
+                        <b>Manual Controls</b>
+                     </div>
+                     <div class="panel-body">
+                       <div class="button-center">
+                         <button id="FORWARD" class="style_1">&#x2191;</button>
+                       </div>
+
+                       <p class="style_1">Rudder Position</p>
+                       <div class="button-center">
+                         <input id="RUDDER_POS" type="range" min="0" max="10" step="1"></input>
+                       </div>
+
+                       <p class="style_1">Speed</p>
+                       <div class="button-center">
+                         <input id="SPEED_POS" type="range" min="0" max="9" step="1" value="0"></input>
+                       </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="col-lg-6">
+                  <!-- /.panel -->
+                  <div class="panel panel-default" id="NAV_OUTDOOR">
+                     <div class="panel-heading">
+                        <b>Navigation (Outdoor)</b>
+                     </div>
+                     <div class="panel-body">
+                        <div id="map"></div>
+                        <script>
+                           function initMap() {
+                             var uni = {lat: 55.910690, lng: -3.321905};
+                             var map = new google.maps.Map(document.getElementById('map'), {
+                               zoom: 15,
+                               center: uni,
+                               mapTypeId: 'satellite'
+                             });
+                             var marker = new google.maps.Marker({
+                                 position: uni,
+                                 map: map,
+                                 draggable:true,
+                                 title:"Drag me!"
+                             });
+                             var marker_position;
+                             google.maps.event.addListener(marker, "click", function (event) {
+                                                 marker_position = this.position;
+                                                 document.getElementById("coord_box").value = marker_position;
+                             });
+                           }
+                        </script>
+                        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7QWAEU5S-z0ns5QGPSm-bkT6nUgCWg_E&callback=initMap"></script>
+                        <input style="width:79%;" id="coord_box" placeholder="Enter a coordinate..."></input>
+                        <button style="width:20%;" id="SUBMIT_COORD">SUBMIT</button>
+                     </div>
+                  </div>
+                  <div class="panel panel-default" id="NAV_INDOOR">
+                     <div class="panel-heading">
+                        <b>Navigation (Indoor)</b>
+                     </div>
+                     <div class="panel-body">
+						 <input type="radio" id="1x1">
+						 <input type="radio" id="1x2">
+						 <input type="radio" id="1x3">
+						 <input type="radio" id="1x4">
+						 <input type="radio" id="1x5">
+						 <input type="radio" id="1x6">
+						 <input type="radio" id="1x7">
+						 <input type="radio" id="1x8">
+						 <input type="radio" id="1x9">
+						 <input type="radio" id="1x10">
+						 <input type="radio" id="1x11">
+						 <input type="radio" id="1x12">
+						 <input type="radio" id="1x13">
+						 <input type="radio" id="1x14">
+						 <input type="radio" id="1x15">
+						 <input type="radio" id="1x16">
+						 <input type="radio" id="1x17">
+						 <input type="radio" id="1x18">
+						 <input type="radio" id="1x19">
+						 <input type="radio" id="1x20">
+						 <input type="radio" id="1x21">
+						 <br>
+						 <input type="radio" id="2x1">
+						 <input type="radio" id="2x2">
+						 <input type="radio" id="2x3">
+						 <input type="radio" id="2x4">
+						 <input type="radio" id="2x5">
+						 <input type="radio" id="2x6">
+						 <input type="radio" id="2x7">
+						 <input type="radio" id="2x8">
+						 <input type="radio" id="2x9">
+						 <input type="radio" id="2x10">
+						 <input type="radio" id="2x11">
+						 <input type="radio" id="2x12">
+						 <input type="radio" id="2x13">
+						 <input type="radio" id="2x14">
+						 <input type="radio" id="2x15">
+						 <input type="radio" id="2x16">
+						 <input type="radio" id="2x17">
+						 <input type="radio" id="2x18">
+						 <input type="radio" id="2x19">
+						 <input type="radio" id="2x20">
+						 <input type="radio" id="2x21">
+						 <br>
+						 <input type="radio" id="3x1">
+						 <input type="radio" id="3x2">
+						 <input type="radio" id="3x3">
+						 <input type="radio" id="3x4">
+						 <input type="radio" id="3x5">
+						 <input type="radio" id="3x6">
+						 <input type="radio" id="3x7">
+						 <input type="radio" id="3x8">
+						 <input type="radio" id="3x9">
+						 <input type="radio" id="3x10">
+						 <input type="radio" id="3x11">
+						 <input type="radio" id="3x12">
+						 <input type="radio" id="3x13">
+						 <input type="radio" id="3x14">
+						 <input type="radio" id="3x15">
+						 <input type="radio" id="3x16">
+						 <input type="radio" id="3x17">
+						 <input type="radio" id="3x18">
+						 <input type="radio" id="3x19">
+						 <input type="radio" id="3x20">
+						 <input type="radio" id="3x21">
+						 <br>
+						 <input type="radio" id="4x1">
+						 <input type="radio" id="4x2">
+						 <input type="radio" id="4x3">
+						 <input type="radio" id="4x4">
+						 <input type="radio" id="4x5">
+						 <input type="radio" id="4x6">
+						 <input type="radio" id="4x7">
+						 <input type="radio" id="4x8">
+						 <input type="radio" id="4x9">
+						 <input type="radio" id="4x10">
+						 <input type="radio" id="4x11">
+						 <input type="radio" id="4x12">
+						 <input type="radio" id="4x13">
+						 <input type="radio" id="4x14">
+						 <input type="radio" id="4x15">
+						 <input type="radio" id="4x16">
+						 <input type="radio" id="4x17">
+						 <input type="radio" id="4x18">
+						 <input type="radio" id="4x19">
+						 <input type="radio" id="4x20">
+						 <input type="radio" id="4x21">
+						 <br>
+						 <input type="radio" id="5x1">
+						 <input type="radio" id="5x2">
+						 <input type="radio" id="5x3">
+						 <input type="radio" id="5x4">
+						 <input type="radio" id="5x5">
+						 <input type="radio" id="5x6">
+						 <input type="radio" id="5x7">
+						 <input type="radio" id="5x8">
+						 <input type="radio" id="5x9">
+						 <input type="radio" id="5x10">
+						 <input type="radio" id="5x11">
+						 <input type="radio" id="5x12">
+						 <input type="radio" id="5x13">
+						 <input type="radio" id="5x14">
+						 <input type="radio" id="5x15">
+						 <input type="radio" id="5x16">
+						 <input type="radio" id="5x17">
+						 <input type="radio" id="5x18">
+						 <input type="radio" id="5x19">
+						 <input type="radio" id="5x20">
+						 <input type="radio" id="5x21">
+						 <br>
+						 <input type="radio" id="6x1">
+						 <input type="radio" id="6x2">
+						 <input type="radio" id="6x3">
+						 <input type="radio" id="6x4">
+						 <input type="radio" id="6x5">
+						 <input type="radio" id="6x6">
+						 <input type="radio" id="6x7">
+						 <input type="radio" id="6x8">
+						 <input type="radio" id="6x9">
+						 <input type="radio" id="6x10">
+						 <input type="radio" id="6x11">
+						 <input type="radio" id="6x12">
+						 <input type="radio" id="6x13">
+						 <input type="radio" id="6x14">
+						 <input type="radio" id="6x15">
+						 <input type="radio" id="6x16">
+						 <input type="radio" id="6x17">
+						 <input type="radio" id="6x18">
+						 <input type="radio" id="6x19">
+						 <input type="radio" id="6x20">
+						 <input type="radio" id="6x21">
+						 <br>
+						 <input type="radio" id="7x1">
+						 <input type="radio" id="7x2">
+						 <input type="radio" id="7x3">
+						 <input type="radio" id="7x4">
+						 <input type="radio" id="7x5">
+						 <input type="radio" id="7x6">
+						 <input type="radio" id="7x7">
+						 <input type="radio" id="7x8">
+						 <input type="radio" id="7x9">
+						 <input type="radio" id="7x10">
+						 <input type="radio" id="7x11">
+						 <input type="radio" id="7x12">
+						 <input type="radio" id="7x13">
+						 <input type="radio" id="7x14">
+						 <input type="radio" id="7x15">
+						 <input type="radio" id="7x16">
+						 <input type="radio" id="7x17">
+						 <input type="radio" id="7x18">
+						 <input type="radio" id="7x19">
+						 <input type="radio" id="7x20">
+						 <input type="radio" id="7x21">
+						 <br>
+						 <input type="radio" id="8x1">
+						 <input type="radio" id="8x2">
+						 <input type="radio" id="8x3">
+						 <input type="radio" id="8x4">
+						 <input type="radio" id="8x5">
+						 <input type="radio" id="8x6">
+						 <input type="radio" id="8x7">
+						 <input type="radio" id="8x8">
+						 <input type="radio" id="8x9">
+						 <input type="radio" id="8x10">
+						 <input type="radio" id="8x11">
+						 <input type="radio" id="8x12">
+						 <input type="radio" id="8x13">
+						 <input type="radio" id="8x14">
+						 <input type="radio" id="8x15">
+						 <input type="radio" id="8x16">
+						 <input type="radio" id="8x17">
+						 <input type="radio" id="8x18">
+						 <input type="radio" id="8x19">
+						 <input type="radio" id="8x20">
+						 <input type="radio" id="8x21">
+						 <br>
+						 <input type="radio" id="9x1">
+						 <input type="radio" id="9x2">
+						 <input type="radio" id="9x3">
+						 <input type="radio" id="9x4">
+						 <input type="radio" id="9x5">
+						 <input type="radio" id="9x6">
+						 <input type="radio" id="9x7">
+						 <input type="radio" id="9x8">
+						 <input type="radio" id="9x9">
+						 <input type="radio" id="9x10">
+						 <input type="radio" id="9x11">
+						 <input type="radio" id="9x12">
+						 <input type="radio" id="9x13">
+						 <input type="radio" id="9x14">
+						 <input type="radio" id="9x15">
+						 <input type="radio" id="9x16">
+						 <input type="radio" id="9x17">
+						 <input type="radio" id="9x18">
+						 <input type="radio" id="9x19">
+						 <input type="radio" id="9x20">
+						 <input type="radio" id="9x21">
+						 <br>
+						 <input type="radio" id="10x1">
+						 <input type="radio" id="10x2">
+						 <input type="radio" id="10x3">
+						 <input type="radio" id="10x4">
+						 <input type="radio" id="10x5">
+						 <input type="radio" id="10x6">
+						 <input type="radio" id="10x7">
+						 <input type="radio" id="10x8">
+						 <input type="radio" id="10x9">
+						 <input type="radio" id="10x10">
+						 <input type="radio" id="10x11">
+						 <input type="radio" id="10x12">
+						 <input type="radio" id="10x13">
+						 <input type="radio" id="10x14">
+						 <input type="radio" id="10x15">
+						 <input type="radio" id="10x16">
+						 <input type="radio" id="10x17">
+						 <input type="radio" id="10x18">
+						 <input type="radio" id="10x19">
+						 <input type="radio" id="10x20">
+						 <input type="radio" id="10x21">
+						 <br>
+						 <input type="radio" id="11x1">
+						 <input type="radio" id="11x2">
+						 <input type="radio" id="11x3">
+						 <input type="radio" id="11x4">
+						 <input type="radio" id="11x5">
+						 <input type="radio" id="11x6">
+						 <input type="radio" id="11x7">
+						 <input type="radio" id="11x8">
+						 <input type="radio" id="11x9">
+						 <input type="radio" id="11x10">
+						 <input type="radio" id="11x11">
+						 <input type="radio" id="11x12">
+						 <input type="radio" id="11x13">
+						 <input type="radio" id="11x14">
+						 <input type="radio" id="11x15">
+						 <input type="radio" id="11x16">
+						 <input type="radio" id="11x17">
+						 <input type="radio" id="11x18">
+						 <input type="radio" id="11x19">
+						 <input type="radio" id="11x20">
+						 <input type="radio" id="11x21">
+						 <br>
+                        <button style="width:100%;" id="SUBMIT_RADIO">SUBMIT</button>
+                     </div>
+                  </div>
+                  <div class="panel panel-default">
+                     <div class="panel-heading">
+                        <b>Camera</b>
+                     </div>
+                     <div class="panel-body">
+                        <div class="camera">
+							<iframe width=100% height=293px src="http://127.0.0.1:8081"></iframe>
+						</div>
+                     </div>
+                  </div>
+               </div>
+               <div class="col-lg-12">
+                  <div class="panel panel-default">
+                     <div class="panel-heading">
+                        <b>Log</b>
+                     </div>
+                     <div class="panel-body">
+                        <textarea id="LOG" rows="8" style="width: 100%; text-align: justify; whitespace: normal;"></textarea>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <!-- /.row -->
+         </div>
+         <!-- /#page-wrapper -->
+      </div>
+      <!-- /#wrapper -->
+      <div class="panel panel-footer">
+         <div class="text-center">
+            &copy; 2017, Neptune&emsp;|&emsp;Bootstrap theme based on work by  <a href="#">Blackrock Digital</a>
+         </div>
+      </div>
+      <!-- jQuery -->
+      <script src="vendor/jquery/jquery.min.js"></script>
+      <!-- Bootstrap Core JavaScript -->
+      <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+      <!-- Metis Menu Plugin JavaScript -->
+      <script src="vendor/metisMenu/metisMenu.min.js"></script>
+      <!-- Morris Charts JavaScript -->
+      <script src="vendor/raphael/raphael.min.js"></script>
+      <script src="vendor/morrisjs/morris.min.js"></script>
+      <script src="data/morris-data.js"></script>
+      <!-- Custom Theme JavaScript -->
+      <script src="dist/js/sb-admin-2.js"></script>
+   </body>
+</html>

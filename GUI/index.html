@@ -48,8 +48,13 @@
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
       <![endif]-->
+      <!-- Socket.IO -->
       <script src="/socket.io/socket.io.js"></script>
+      <!-- jQuery -->
       <script src="vendor/jquery/jquery.js"></script>
+      <!-- Leaflet -->
+      <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+      <script src="vendor/leaflet/leaflet.js"></script>
    </head>
    <body>
       <script>
@@ -214,7 +219,7 @@
              socket.emit('logUpdate', "logUpdate");
          }, 100);
 
-         <!-- MAP -->
+         <!-- MAP - OUTDOOR -->
 
          $(document).off('click', '#SUBMIT_COORD').on('click', '#SUBMIT_COORD', function (e) {
            console.log('click');
@@ -225,17 +230,29 @@
            socket.emit('submitCoordCmd', coordString);
            e.preventDefault();
          });
+         
+		 <!-- MAP - INDOOR -->
+		 $('#START_POS_SAVE').click(function() {
+		   var display = document.getElementById('OUTPUT_BOX').value;
+		   alert(display);
+		 });
 
-         <!-- CAMERA -->
+		 $('#DEST_POS_SAVE').click(function() {
+		   var display = document.getElementById('OUTPUT_BOX').value;
+		   alert(display);
+		 });
 
-		socket.on('live-stream', function(image) {
-		   $('#stream').attr('src', 'data:image/jpg;base64,' + image);
-		   $('#start').hide();
-		});
-		function startStream() {
-		   socket.emit('start-stream');
-		   $('#start').hide();
-		}
+		 <!-- CAMERA -->
+ 
+ 		 socket.on('live-stream', function(image) {
+		    $('#stream').attr('src', 'data:image/jpg;base64,' + image);
+		    $('#start').hide();
+		 });
+		 
+		 function startStream() {
+		    socket.emit('start-stream');
+		    $('#start').hide();
+		 }
 
       </script>
       <div id="wrapper">
@@ -460,249 +477,40 @@
                         <b>Navigation (Indoor)</b>
                      </div>
                      <div class="panel-body">
-						 <input type="radio" id="1x1">
-						 <input type="radio" id="1x2">
-						 <input type="radio" id="1x3">
-						 <input type="radio" id="1x4">
-						 <input type="radio" id="1x5">
-						 <input type="radio" id="1x6">
-						 <input type="radio" id="1x7">
-						 <input type="radio" id="1x8">
-						 <input type="radio" id="1x9">
-						 <input type="radio" id="1x10">
-						 <input type="radio" id="1x11">
-						 <input type="radio" id="1x12">
-						 <input type="radio" id="1x13">
-						 <input type="radio" id="1x14">
-						 <input type="radio" id="1x15">
-						 <input type="radio" id="1x16">
-						 <input type="radio" id="1x17">
-						 <input type="radio" id="1x18">
-						 <input type="radio" id="1x19">
-						 <input type="radio" id="1x20">
-						 <input type="radio" id="1x21">
-						 <br>
-						 <input type="radio" id="2x1">
-						 <input type="radio" id="2x2">
-						 <input type="radio" id="2x3">
-						 <input type="radio" id="2x4">
-						 <input type="radio" id="2x5">
-						 <input type="radio" id="2x6">
-						 <input type="radio" id="2x7">
-						 <input type="radio" id="2x8">
-						 <input type="radio" id="2x9">
-						 <input type="radio" id="2x10">
-						 <input type="radio" id="2x11">
-						 <input type="radio" id="2x12">
-						 <input type="radio" id="2x13">
-						 <input type="radio" id="2x14">
-						 <input type="radio" id="2x15">
-						 <input type="radio" id="2x16">
-						 <input type="radio" id="2x17">
-						 <input type="radio" id="2x18">
-						 <input type="radio" id="2x19">
-						 <input type="radio" id="2x20">
-						 <input type="radio" id="2x21">
-						 <br>
-						 <input type="radio" id="3x1">
-						 <input type="radio" id="3x2">
-						 <input type="radio" id="3x3">
-						 <input type="radio" id="3x4">
-						 <input type="radio" id="3x5">
-						 <input type="radio" id="3x6">
-						 <input type="radio" id="3x7">
-						 <input type="radio" id="3x8">
-						 <input type="radio" id="3x9">
-						 <input type="radio" id="3x10">
-						 <input type="radio" id="3x11">
-						 <input type="radio" id="3x12">
-						 <input type="radio" id="3x13">
-						 <input type="radio" id="3x14">
-						 <input type="radio" id="3x15">
-						 <input type="radio" id="3x16">
-						 <input type="radio" id="3x17">
-						 <input type="radio" id="3x18">
-						 <input type="radio" id="3x19">
-						 <input type="radio" id="3x20">
-						 <input type="radio" id="3x21">
-						 <br>
-						 <input type="radio" id="4x1">
-						 <input type="radio" id="4x2">
-						 <input type="radio" id="4x3">
-						 <input type="radio" id="4x4">
-						 <input type="radio" id="4x5">
-						 <input type="radio" id="4x6">
-						 <input type="radio" id="4x7">
-						 <input type="radio" id="4x8">
-						 <input type="radio" id="4x9">
-						 <input type="radio" id="4x10">
-						 <input type="radio" id="4x11">
-						 <input type="radio" id="4x12">
-						 <input type="radio" id="4x13">
-						 <input type="radio" id="4x14">
-						 <input type="radio" id="4x15">
-						 <input type="radio" id="4x16">
-						 <input type="radio" id="4x17">
-						 <input type="radio" id="4x18">
-						 <input type="radio" id="4x19">
-						 <input type="radio" id="4x20">
-						 <input type="radio" id="4x21">
-						 <br>
-						 <input type="radio" id="5x1">
-						 <input type="radio" id="5x2">
-						 <input type="radio" id="5x3">
-						 <input type="radio" id="5x4">
-						 <input type="radio" id="5x5">
-						 <input type="radio" id="5x6">
-						 <input type="radio" id="5x7">
-						 <input type="radio" id="5x8">
-						 <input type="radio" id="5x9">
-						 <input type="radio" id="5x10">
-						 <input type="radio" id="5x11">
-						 <input type="radio" id="5x12">
-						 <input type="radio" id="5x13">
-						 <input type="radio" id="5x14">
-						 <input type="radio" id="5x15">
-						 <input type="radio" id="5x16">
-						 <input type="radio" id="5x17">
-						 <input type="radio" id="5x18">
-						 <input type="radio" id="5x19">
-						 <input type="radio" id="5x20">
-						 <input type="radio" id="5x21">
-						 <br>
-						 <input type="radio" id="6x1">
-						 <input type="radio" id="6x2">
-						 <input type="radio" id="6x3">
-						 <input type="radio" id="6x4">
-						 <input type="radio" id="6x5">
-						 <input type="radio" id="6x6">
-						 <input type="radio" id="6x7">
-						 <input type="radio" id="6x8">
-						 <input type="radio" id="6x9">
-						 <input type="radio" id="6x10">
-						 <input type="radio" id="6x11">
-						 <input type="radio" id="6x12">
-						 <input type="radio" id="6x13">
-						 <input type="radio" id="6x14">
-						 <input type="radio" id="6x15">
-						 <input type="radio" id="6x16">
-						 <input type="radio" id="6x17">
-						 <input type="radio" id="6x18">
-						 <input type="radio" id="6x19">
-						 <input type="radio" id="6x20">
-						 <input type="radio" id="6x21">
-						 <br>
-						 <input type="radio" id="7x1">
-						 <input type="radio" id="7x2">
-						 <input type="radio" id="7x3">
-						 <input type="radio" id="7x4">
-						 <input type="radio" id="7x5">
-						 <input type="radio" id="7x6">
-						 <input type="radio" id="7x7">
-						 <input type="radio" id="7x8">
-						 <input type="radio" id="7x9">
-						 <input type="radio" id="7x10">
-						 <input type="radio" id="7x11">
-						 <input type="radio" id="7x12">
-						 <input type="radio" id="7x13">
-						 <input type="radio" id="7x14">
-						 <input type="radio" id="7x15">
-						 <input type="radio" id="7x16">
-						 <input type="radio" id="7x17">
-						 <input type="radio" id="7x18">
-						 <input type="radio" id="7x19">
-						 <input type="radio" id="7x20">
-						 <input type="radio" id="7x21">
-						 <br>
-						 <input type="radio" id="8x1">
-						 <input type="radio" id="8x2">
-						 <input type="radio" id="8x3">
-						 <input type="radio" id="8x4">
-						 <input type="radio" id="8x5">
-						 <input type="radio" id="8x6">
-						 <input type="radio" id="8x7">
-						 <input type="radio" id="8x8">
-						 <input type="radio" id="8x9">
-						 <input type="radio" id="8x10">
-						 <input type="radio" id="8x11">
-						 <input type="radio" id="8x12">
-						 <input type="radio" id="8x13">
-						 <input type="radio" id="8x14">
-						 <input type="radio" id="8x15">
-						 <input type="radio" id="8x16">
-						 <input type="radio" id="8x17">
-						 <input type="radio" id="8x18">
-						 <input type="radio" id="8x19">
-						 <input type="radio" id="8x20">
-						 <input type="radio" id="8x21">
-						 <br>
-						 <input type="radio" id="9x1">
-						 <input type="radio" id="9x2">
-						 <input type="radio" id="9x3">
-						 <input type="radio" id="9x4">
-						 <input type="radio" id="9x5">
-						 <input type="radio" id="9x6">
-						 <input type="radio" id="9x7">
-						 <input type="radio" id="9x8">
-						 <input type="radio" id="9x9">
-						 <input type="radio" id="9x10">
-						 <input type="radio" id="9x11">
-						 <input type="radio" id="9x12">
-						 <input type="radio" id="9x13">
-						 <input type="radio" id="9x14">
-						 <input type="radio" id="9x15">
-						 <input type="radio" id="9x16">
-						 <input type="radio" id="9x17">
-						 <input type="radio" id="9x18">
-						 <input type="radio" id="9x19">
-						 <input type="radio" id="9x20">
-						 <input type="radio" id="9x21">
-						 <br>
-						 <input type="radio" id="10x1">
-						 <input type="radio" id="10x2">
-						 <input type="radio" id="10x3">
-						 <input type="radio" id="10x4">
-						 <input type="radio" id="10x5">
-						 <input type="radio" id="10x6">
-						 <input type="radio" id="10x7">
-						 <input type="radio" id="10x8">
-						 <input type="radio" id="10x9">
-						 <input type="radio" id="10x10">
-						 <input type="radio" id="10x11">
-						 <input type="radio" id="10x12">
-						 <input type="radio" id="10x13">
-						 <input type="radio" id="10x14">
-						 <input type="radio" id="10x15">
-						 <input type="radio" id="10x16">
-						 <input type="radio" id="10x17">
-						 <input type="radio" id="10x18">
-						 <input type="radio" id="10x19">
-						 <input type="radio" id="10x20">
-						 <input type="radio" id="10x21">
-						 <br>
-						 <input type="radio" id="11x1">
-						 <input type="radio" id="11x2">
-						 <input type="radio" id="11x3">
-						 <input type="radio" id="11x4">
-						 <input type="radio" id="11x5">
-						 <input type="radio" id="11x6">
-						 <input type="radio" id="11x7">
-						 <input type="radio" id="11x8">
-						 <input type="radio" id="11x9">
-						 <input type="radio" id="11x10">
-						 <input type="radio" id="11x11">
-						 <input type="radio" id="11x12">
-						 <input type="radio" id="11x13">
-						 <input type="radio" id="11x14">
-						 <input type="radio" id="11x15">
-						 <input type="radio" id="11x16">
-						 <input type="radio" id="11x17">
-						 <input type="radio" id="11x18">
-						 <input type="radio" id="11x19">
-						 <input type="radio" id="11x20">
-						 <input type="radio" id="11x21">
-						 <br>
-                        <button style="width:100%;" id="SUBMIT_RADIO">SUBMIT</button>
+						<div id="mapid"></div>
+						<script>
+							var indoorMap = L.map('mapid', {
+							  crs: L.CRS.Simple,
+							  minZoom: 0,
+							  maxZoom: 0
+							});
+
+							var bounds = [[0,0], [478,790]];
+							var image = L.imageOverlay('tiles/em_3.png', bounds).addTo(indoorMap);
+
+							indoorMap.fitBounds(bounds);
+							indoorMap.setMaxBounds(bounds);
+
+							<!-- indoorMap.dragging.disable(); -->
+
+							var marker = L.marker(new L.LatLng(210, 683), {
+							draggable: true
+							}).addTo(indoorMap);
+
+							marker.on('dragend', function(event) {
+							  var marker = event.target;
+							  var result = marker.getLatLng();
+							  document.getElementById('POS_BOX').value = result;
+							  console.log(result);
+							});
+							
+							indoorMap.on('drag', function() {
+								indoorMap.panInsideBounds(bounds, {animate: false});
+							});
+						</script>
+						<input style="width:60%;" id="POS_BOX" placeholder="Enter a coordinate..."></input>
+                        <button style="width:19%;" id="SUBMIT_INDOOR_START">START</button>
+                        <button style="width:19%;" id="SUBMIT_INDOOR_DEST">END</button>
                      </div>
                   </div>
                   <div class="panel panel-default">

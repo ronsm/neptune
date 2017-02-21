@@ -59,7 +59,7 @@ int lastActuationCmd = 100;
 // 'Outdoor - Auto'
 int initialLoop = 0;
 int currentDistances[4];
-const float pi = 3.14159;
+const float pi = 3.141593;
 
 // I/O configuration
 const int radarTrigPin = 22;
@@ -89,6 +89,9 @@ uint32_t timer = millis();
 boolean usingInterrupt = false;
 void useInterrupt(boolean);
 
+// IMU
+MPU9250 IMU;
+
 /* Core system functions */
 
 /**
@@ -96,19 +99,20 @@ void useInterrupt(boolean);
  */
 void setup()
 {
+  
+  // Serial
+  Serial.begin(57600);           // start serial for output
+  Serial.print("Serial: OK \n");
+
   // I2C
   Wire.begin(4);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
   Serial.print("I2C: OK \n");
   
-  // Serial
-  Serial.begin(57600);           // start serial for output
-  Serial.print("Serial: OK \n");
-  
   // Radar
-  pinMode(radarTrigPin, OUTPUT); // trig pin as output
-  pinMode(radarEchoPin, INPUT); // echo pin as input
+  pinMode(radarTrigPin, OUTPUT);  // trig pin as output
+  pinMode(radarEchoPin, INPUT);   // echo pin as input
   radarServo.attach(12);
   radarServo.write(90);
   Serial.print("Radar: OK \n");
@@ -126,6 +130,26 @@ void setup()
   controlMode = false;
   rudderPos = 6;
   speedSel = 0;
+  Serial.print("SAFETY: OK \n");
+
+  // IMU
+//  byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
+//  Serial.print("MPU9250 "); Serial.print("IMU is at address: "); Serial.print(c, HEX);
+//
+//  if (c == 0x71){
+//    Serial.println("MPU9250 is online...");
+//
+//    IMU.MPU9250SelfTest(IMU.SelfTest); // Self-test
+//    IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias); // Calibration
+//    IMU.initMPU9250(); // Initialise
+//    byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963); // Test magnetometer
+//    IMU.initAK8963(IMU.magCalibration);
+//  }
+//  else{
+//    Serial.print("Could not connect to MPU9250: 0x");
+//    Serial.println(c, HEX);
+//  }
+  Serial.print("IMU: OK \n");
 
   // Ready
   Serial.print("* * * READY * * * \n");
@@ -136,7 +160,8 @@ void setup()
  */
 void loop()
 {
-  delay(100);
+  delay(400);
+  
   if(actuationCmd != lastActuationCmd){
     Wire.beginTransmission(3);
     Wire.write(actuationCmd);
@@ -149,12 +174,15 @@ void loop()
   long rangeDuration;
   long rangeDistance;
   int averageDistance = 0;
-  radarScan();
+  //radarScan();
 
   // GPS
-  gpsLoop();
-
-  outdoorAutoController();
+  //gpsLoop();
+  
+  //IMU
+  //Serial.println(getHeading());
+  
+  //outdoorAutoController();
 }
 
 /* I2C cimmunication handlers */
@@ -219,6 +247,11 @@ void receiveEvent(int byteCount){
         Serial.print(rudderPos);
         Serial.print("\n");
       }
+      if(number == 112){
+        Serial.print("INVALID RUDDER POS:");
+        lastCommand = number;
+        Serial.print("\n");
+      }
       if(number >= 120 && number <= 129){
         Serial.print("MOTOR SPEED: ");
         lastCommand = number;
@@ -226,11 +259,17 @@ void receiveEvent(int byteCount){
         Serial.print(speedSel);
         Serial.print("\n");
       }
+      if(number == 130){
+        Serial.print("INVALID SPEED SEL:");
+        lastCommand = number;
+        Serial.print("\n");
+      }
       if(number == 140){
         Serial.print("COORDINATE INCOMING \n");
         lastCommand = number;
       }
     }
+  actuationCmd = lastCommand;
   }
   
   if(byteCount > 20){
@@ -295,8 +334,11 @@ void outdoorAutoController(){
 coord getCurrentPosition(){
   coord currentPosition;
   
-  currentPosition.lat = 56.191834;
-  currentPosition.lon = -3.145690;
+  //currentPosition.lat = 56.191834;
+  //currentPosition.lon = -3.145690;
+
+  currentPosition.lat = getLatitude();
+  currentPosition.lon = getLongitude();
 
   return currentPosition;
 }
@@ -518,6 +560,9 @@ long microsecondsToCentimeters(long us){
 
 /* GPS */
 
+/**
+ * Interrupt routine, runs when GPS sends an update.
+ */
 SIGNAL(TIMER0_COMPA_vect) {
   char c = GPS.read();
 #ifdef UDR0
@@ -526,6 +571,9 @@ SIGNAL(TIMER0_COMPA_vect) {
 #endif
 }
 
+/**
+ * Sets up the interrupt function to allow asynchronus GPS updating.
+ */
 void useInterrupt(boolean v) {
   if (v) {
     OCR0A = 0xAF;
@@ -537,7 +585,10 @@ void useInterrupt(boolean v) {
   }
 }
 
-void gpsLoop()                     // run over and over again
+/**
+ * Polls the interrupt status to see if new data is available, and prints it.
+ */
+void gpsLoop()
 {
   if (! usingInterrupt) {
     char c = GPS.read();
@@ -558,22 +609,95 @@ void gpsLoop()                     // run over and over again
     timer = millis(); // reset the timer
     Serial.println("Location: ");
     Serial.println("");
-    Serial.println(GPSlatitude (), 4);
-    Serial.println(GPSlongitude (), 4);
+    Serial.println(getLatitude (), 4);
+    Serial.println(getLongitude (), 4);
+    Serial.println(getAngle (), 4);
     Serial.println("");
   }
 }
 
-double GPSlatitude (){
+/**
+ * Returns GPS latitude.
+ */
+float getLatitude (){
   if (GPS.fix) {
     return GPS.latitudeDegrees;
   }
   return 0;
 }
 
-double GPSlongitude (){
+/**
+ * Returns GPS longitude.
+ */
+float getLongitude (){
   if (GPS.fix) {
     return GPS.longitudeDegrees;
   }
   return 0;
+}
+
+/**
+ * Returns GPS angle.
+ */
+float getAngle (){
+  if (GPS.fix) {
+    return GPS.angle;
+  }
+  return 0;
+}
+
+/* IMU */
+
+/**
+ * Returns the current heading from the IMU's compass.
+ */
+double getHeading(){
+  if (IMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01){  
+    IMU.readMagData(IMU.magCount);  // Read the x/y/z adc values
+    IMU.getMres();
+
+    IMU.magbias[0] = 0;
+    IMU.magbias[1] = 200;
+    IMU.magbias[2] = 0;
+    
+    IMU.mx = (float)IMU.magCount[0]*IMU.mRes*IMU.magCalibration[0] - IMU.magbias[0];
+    IMU.my = (float)IMU.magCount[1]*IMU.mRes*IMU.magCalibration[1] - IMU.magbias[1];
+    IMU.mz = (float)IMU.magCount[2]*IMU.mRes*IMU.magCalibration[2] - IMU.magbias[2];
+  } 
+  IMU.updateTime();
+
+  MahonyQuaternionUpdate(IMU.ax, IMU.ay, IMU.az, IMU.gx*DEG_TO_RAD,
+                         IMU.gy*DEG_TO_RAD, IMU.gz*DEG_TO_RAD, IMU.my,
+                         IMU.mx, IMU.mz, IMU.deltat);
+
+    // Serial print and/or display at 0.5 s rate independent of data rates
+    IMU.delt_t = millis() - IMU.count;
+
+    if (IMU.delt_t > 500){
+      Serial.print("mx = "); Serial.print( (int)IMU.mx );
+      Serial.print(" my = "); Serial.print( (int)IMU.my );
+      Serial.print(" mz = "); Serial.print( (int)IMU.mz );
+      Serial.println(" mG");
+     
+      IMU.count = millis();
+      IMU.sumCount = 0;
+      IMU.sum = 0;
+  
+      if (IMU.my == 0){
+        if (IMU.mx > 0){
+          return 0;
+        }
+        else{
+          return 180;
+        }
+      }
+      else{
+        if (IMU.my > 0){
+          return (90 - (atan(IMU.mx/IMU.my)*180/pi));
+        }
+        else{
+          return (270 - (atan(IMU.mx/IMU.my)*180/pi));
+        }
+      }
+    } 
 }

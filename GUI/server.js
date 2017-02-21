@@ -25,12 +25,12 @@
 var http = require('http');
 var url = require('url');
 var fs = require('fs');
-var server;
 var i2c = require('i2c');
-
-var http = require('http');
 var fs = require('fs');
 var path = require('path');
+var SerialPort = require('serialport');
+
+var server;
 
 server = http.createServer(function (request, response) {
     console.log('request starting...');
@@ -100,19 +100,30 @@ server = http.createServer(function (request, response) {
 })
 
 server.listen(8000);
-console.log('Server running at http://127.0.0.1:9000/');
+console.log('Server running at http://127.0.0.1:8000/');
 
-// use socket.io
+// SERIALPORT
+
+var port = new SerialPort("/dev/ttyACM0", {
+	baudRate: 57600
+});
+
+port.on("open", function() {
+	console.log('Opened serial port @ 57600 baud');
+	
+	port.on('data', function(data) {
+		console.log('' + data);
+	});
+	
+});
+
+// SOCKET.IO
+
 var io = require('socket.io').listen(server);
-
-//turn off debug
 io.set('log level', 1);
-
-// sockets variables
 var interprettedMsg;
 var newCommand = 0;
 
-// define interactions with client
 io.sockets.on('connection', function(socket){
 
     var device1 = new i2c(0x18, {device: '/dev/i2c-1', debug: false});
@@ -180,6 +191,7 @@ io.sockets.on('connection', function(socket){
 		var commandInt = command.toString();
 		
 		var commandAdjusted;
+		commandAdjusted = 112;
 		
 		if(commandInt == 0){
 			commandAdjusted = 101;
@@ -214,15 +226,12 @@ io.sockets.on('connection', function(socket){
 		if(commandInt == 10){
 			commandAdjusted = 111;
 		}
-		else{
-			commandAdjusted = 112;
-		}
 		
 		console.log(command);
 		console.log('rudder position:');
 		console.log(commandAdjusted);
 		
-		device1.writeBytes('', commandAdjusted, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(commandAdjusted, function(err) { console.log("error"); console.log(err); });
 
 		newCommand = 1;
     });
@@ -231,6 +240,7 @@ io.sockets.on('connection', function(socket){
 		var commandInt = command.toString();
 		
 		var commandAdjusted;
+		commandAdjusted = 130;
 		
 		if(commandInt == 0){
 			commandAdjusted = 120;
@@ -262,15 +272,12 @@ io.sockets.on('connection', function(socket){
 		if(commandInt == 9){
 			commandAdjusted = 129;
 		}
-		else{
-			commandAdjusted = 130;
-		}
 		
 		console.log(command);
 		console.log('rudder position:');
 		console.log(commandAdjusted);
 		
-		device1.writeBytes('', commandAdjusted, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(commandAdjusted, function(err) { console.log("error"); console.log(err); });
 
 		newCommand = 1;
     });
@@ -305,6 +312,8 @@ io.sockets.on('connection', function(socket){
 
 		newCommand = 1;
     });
+    
+    // AUTOMATIC LOG UPDATING
 
     socket.on('logUpdate', function(logMsg){
 		if(newCommand == 0){

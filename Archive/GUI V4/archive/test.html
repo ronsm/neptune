@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.io Test</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>
+  </head>
+  <body>
+    <script>    
+      var socket = io.connect();
+      
+      socket.on('date', function(data){
+        $('#date').text(data.date);
+      });
+
+      $(document).ready(function(){
+        $('#text').keypress(function(e){
+          socket.emit('client_data', {'letter': String.fromCharCode(e.charCode)});
+	});
+      });
+
+
+      $(document).off('click', '#ON').on('click', '#ON', function (e) {
+          console.log('click');
+
+	  socket.emit('powerOnCmd', {command: 'power_on'});
+	  e.preventDefault();
+      });
+
+      $(document).off('click', '#OFF').on('click', '#OFF', function (e) {
+          console.log('click');
+
+	  socket.emit('powerOffCmd', {command: 'power_off'});
+	  e.preventDefault();
+      });
+
+    </script>
+    <div id="date"></div>
+    <textarea id="text"></textarea>
+    <br>
+    <button id="ON">ON</button> &emsp;
+    <button id="OFF">OFF</button>
+  </body>
+</html>

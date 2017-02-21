@@ -1,0 +1,76 @@
+<html>
+
+<head>
+
+  <title>Earl Mountbatten Building - 3rd Floor</title>
+
+  <link rel="stylesheet" href="leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="leaflet/leaflet.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+  <style>
+  #mapid {
+    height: 478px;
+    width: 790px;
+  }
+
+  h1{
+    font-family: Arial;
+  }
+  </style>
+
+</head>
+
+<body>
+
+  <h1>Earl Mountbatten Building - 3rd Floor</h1>
+
+  <div id="mapid"></div>
+
+  <script>
+    var map = L.map('mapid', {
+      crs: L.CRS.Simple,
+      minZoom: 0,
+      maxZoom: 0
+    });
+
+    var bounds = [[0,0], [478,790]];
+    var image = L.imageOverlay('tiles/em_3.png', bounds).addTo(map);
+
+    map.fitBounds(bounds);
+
+    map.dragging.disable();
+
+    var marker = L.marker(new L.LatLng(210, 683), {
+    draggable: true
+    }).addTo(map);
+
+    marker.on('dragend', function(event) {
+      var marker = event.target;
+      var result = marker.getLatLng();
+      document.getElementById('OUTPUT_BOX').value = result;
+      console.log(result);
+    });
+
+  </script>
+
+  <input type="text" id="OUTPUT_BOX" size="50"><br>
+  <button id="START_POS_SAVE">START POINT</button>
+  <button id="DEST_POS_SAVE">END POINT</button>
+
+  <script>
+    $('#START_POS_SAVE').click(function() {
+      var display = document.getElementById('OUTPUT_BOX').value;
+      alert(display);
+    });
+
+    $('#DEST_POS_SAVE').click(function() {
+      var display = document.getElementById('OUTPUT_BOX').value;
+      alert(di splay);
+    });
+    </script>
+
+</body>
+
+</html>
