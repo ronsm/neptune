@@ -18,7 +18,7 @@ according to the part of the system they are utilized by.
 
 ## Authors
 
-* **Alexander James** - *Wireless Communication and Sensing* - [N/A](https://github.com/404)
+* **Alexander James** - *Wireless Communication and Sensing* - [aljames27](https://github.com/Aljames27)
 * **Maciej Mierzwa** - *Mechanical Design Principles* - [N/A](https://github.com/404)
 * **Ronnie Smith** - *Software and Human Interface for Semi-Autonomous Operation* - [ronsm](https://github.com/ronsm)
 * **Seb Smith** - *Power, Actuator Control and Hardware Interface* - [seb43654](https://github.com/seb43654)

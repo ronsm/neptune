@@ -1,0 +1,43 @@
+"Test Track 1"      // Environment name
+10                  // Environment width - Ew - meters
+7                   // Environment length - El - meters
+0.5                 // Accuracy coefficient - Ac - value between 0 and 1
+
+// Environment information
+// Array width - Aw = (1/Ac) * Ew
+// Array length - Al = (1/Ac) * El
+// 1 = Obstacle, 0 = Clear
+
+// Environment array
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+// Environment exits
+1 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1
+1                                         1
+1                                         1
+1                                         1
+1                                         1
+0                                         1
+0                                         0
+0                                         0
+0                                         0
+0                                         0
+1                                         1
+1                                         1
+1                                         1
+1                                         1
+1                                         1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1

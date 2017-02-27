@@ -232,14 +232,26 @@
          });
          
 		 <!-- MAP - INDOOR -->
-		 $('#START_POS_SAVE').click(function() {
-		   var display = document.getElementById('OUTPUT_BOX').value;
-		   alert(display);
+		 $(document).off('click', '#SSUBMIT_INDOOR_START').on('click', '#SUBMIT_INDOOR_START', function (e) {
+		   var coordLat = $("#POS_BOX_LAT").val();
+		   var coordLng = $("#POS_BOX_LNG").val();
+		   var coordString = coordLat.toString() + ',' + coordLng.toString()
+		   
+		   console.log(coordString);
+		   
+		   socket.emit('submitIndoorStart', coordString);
+		   e.preventDefault();
 		 });
 
-		 $('#DEST_POS_SAVE').click(function() {
-		   var display = document.getElementById('OUTPUT_BOX').value;
-		   alert(display);
+		 $(document).off('click', '#SSUBMIT_INDOOR_DEST').on('click', '#SUBMIT_INDOOR_DEST', function (e) {
+		   var coordLat = $("#POS_BOX_LAT").val();
+		   var coordLng = $("#POS_BOX_LNG").val();
+		   var coordString = coordLat.toString() + ',' + coordLng.toString()
+		   
+		   console.log(coordString);
+		   
+		   socket.emit('submitIndoorDest', coordString);
+		   e.preventDefault();
 		 });
 
 		 <!-- CAMERA -->
@@ -500,7 +512,15 @@
 							marker.on('dragend', function(event) {
 							  var marker = event.target;
 							  var result = marker.getLatLng();
-							  document.getElementById('POS_BOX').value = result;
+							  
+							  var markerLat = result.lat;
+							  var markerLng = result.lng;
+							  
+							  document.getElementById('POS_BOX_LAT').value = markerLat;
+							  document.getElementById('POS_BOX_LNG').value = markerLng;
+							  
+							  console.log(markerLat);
+							  console.log(markerLng);
 							  console.log(result);
 							});
 							
@@ -508,7 +528,8 @@
 								indoorMap.panInsideBounds(bounds, {animate: false});
 							});
 						</script>
-						<input style="width:60%;" id="POS_BOX" placeholder="Enter a coordinate..."></input>
+						<input style="width:29%;" id="POS_BOX_LAT" placeholder="Latitude..."></input>
+						<input style="width:29%;" id="POS_BOX_LNG" placeholder="Longitude..."></input>
                         <button style="width:19%;" id="SUBMIT_INDOOR_START">START</button>
                         <button style="width:19%;" id="SUBMIT_INDOOR_DEST">END</button>
                      </div>

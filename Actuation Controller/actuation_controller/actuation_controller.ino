@@ -79,7 +79,7 @@ void receiveEvent(int howMany)
         {
           Serial.print("Power ON");
           Serial.print("\n");
-          esc2.write(80);
+          esc2.write(90);
         }
         
           if (x == off)

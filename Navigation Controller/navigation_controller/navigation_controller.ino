@@ -51,6 +51,8 @@ int speedSel;
 // Received command handling
 int lastCommand = 0;
 String lastCoord = "";
+String lastIndoorStartCoord = "";
+String lastIndoorDestCoord = "";
 
 // Actuator command handling
 int actuationCmd = 0;
@@ -97,9 +99,7 @@ MPU9250 IMU;
 /**
  * Sets up the Arduino on boot.
  */
-void setup()
-{
-  
+void setup(){
   // Serial
   Serial.begin(57600);           // start serial for output
   Serial.print("Serial: OK \n");
@@ -158,8 +158,7 @@ void setup()
 /**
  * This function will run continuously when no other function is running.
  */
-void loop()
-{
+void loop(){
   delay(400);
   
   if(actuationCmd != lastActuationCmd){
@@ -202,74 +201,104 @@ void receiveEvent(int byteCount){
       number = Wire.read();
 
       if(number == 255){
-        Serial.print("RESET \n");
+        Serial.print("ACK: RESET \n");
         lastCommand = number;
         actuationCmd = number;
       }
       if(number == 1){
-        Serial.print("POWER ON \n");
+        Serial.print("ACK: POWER ON \n");
         lastCommand = number;
         actuationCmd = number;
       }
       if(number == 2){
-        Serial.print("POWER OFF \n");
+        Serial.print("ACK: POWER OFF \n");
         lastCommand = number;
         actuationCmd = number;
       }
       if(number == 10){
-        Serial.print("AUTOMATIC MODE \n");
+        Serial.print("ACK: AUTOMATIC MODE \n");
         lastCommand = number;
         controlMode = true;
       }
       if(number == 11){
-        Serial.print("MANUAL MODE \n");
+        Serial.print("ACK: MANUAL MODE \n");
         lastCommand = number;
         controlMode = false;
       }
       if(number == 12){
-        Serial.print("INDOOR MODE \n");
+        Serial.print("ACK: INDOOR MODE \n");
         lastCommand = number;
         environmentMode = true;
       }
       if(number == 13){
-        Serial.print("OUTDOOR MODE \n");
+        Serial.print("ACK: OUTDOOR MODE \n");
         lastCommand = number;
         environmentMode = false;
       }
       if(number == 100){
-        Serial.print("FORWARD 1U \n");
+        Serial.print("ACK: FORWARD 1U \n");
         lastCommand -number;
       }
       if(number >= 101 && number <= 111){
-        Serial.print("RUDDER POS:");
+        Serial.print("ACK: RUDDER POS:");
         lastCommand = number;
         rudderPos = 101 - number;
         Serial.print(rudderPos);
         Serial.print("\n");
       }
       if(number == 112){
-        Serial.print("INVALID RUDDER POS:");
+        Serial.print("ACK: INVALID RUDDER POS:");
         lastCommand = number;
         Serial.print("\n");
       }
       if(number >= 120 && number <= 129){
-        Serial.print("MOTOR SPEED: ");
+        Serial.print("ACK: MOTOR SPEED: ");
         lastCommand = number;
         speedSel = 120 - number;
         Serial.print(speedSel);
         Serial.print("\n");
       }
       if(number == 130){
-        Serial.print("INVALID SPEED SEL:");
+        Serial.print("ACK: INVALID SPEED SEL:");
         lastCommand = number;
         Serial.print("\n");
       }
       if(number == 140){
-        Serial.print("COORDINATE INCOMING \n");
+        Serial.print("ACK: COORDINATE INCOMING \n");
+        lastCommand = number;
+      }
+      if(number == 141){
+        Serial.print("ACK: INDOOR START COORDINATE INCOMING \n");
+        lastCommand = number;
+      }
+      if(number == 142){
+        Serial.print("ACK: INDOOR DEST COORDINATE INCOMING \n");
         lastCommand = number;
       }
     }
   actuationCmd = lastCommand;
+  }
+
+  if(byteCount > 1 && (lastCommand == 141)){
+    while(1 < Wire.available()){
+      int c = Wire.read();
+      lastIndoorStartCoord += c;
+    }
+    int x = Wire.read();
+    lastIndoorStartCoord += x;
+
+    Serial.println(lastIndoorStartCoord);
+  }
+
+  if(byteCount > 1 && (lastCommand == 142)){
+    while(1 < Wire.available()){
+      int c = Wire.read();
+      lastIndoorDestCoord += c;
+    }
+    int x = Wire.read();
+    lastIndoorDestCoord += x;
+
+    Serial.println(lastIndoorDestCoord);
   }
   
   if(byteCount > 20){
@@ -290,6 +319,9 @@ void receiveEvent(int byteCount){
 
 /**
  * Responds to request interrupts from the master.
+ * 
+ * As of 23/02/17 this function is deprecated, as callbacks are
+ * carried out using the Serial connection to the Raspberry Pi.
  */
 void requestEvent(){
   switch (lastCommand) {
@@ -588,8 +620,7 @@ void useInterrupt(boolean v) {
 /**
  * Polls the interrupt status to see if new data is available, and prints it.
  */
-void gpsLoop()
-{
+void gpsLoop(){
   if (! usingInterrupt) {
     char c = GPS.read();
     if (GPSECHO)

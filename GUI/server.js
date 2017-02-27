@@ -111,8 +111,12 @@ var port = new SerialPort("/dev/ttyACM0", {
 port.on("open", function() {
 	console.log('Opened serial port @ 57600 baud');
 	
+	var serialMsg;
+
 	port.on('data', function(data) {
 		console.log('' + data);
+		serialMsg = '[NAV-CON] ' + data;
+		io.emit('logWrite', serialMsg);
 	});
 	
 });
@@ -285,6 +289,9 @@ io.sockets.on('connection', function(socket){
     // MAP MANAGEMENT
     
     socket.on('submitCoordCmd', function(command){
+		
+		device1.writeByte(140, function(err) { console.log("error"); console.log(err); });
+		
 		var commandString = command.toString();
 		console.log(commandString);
 
@@ -308,10 +315,40 @@ io.sockets.on('connection', function(socket){
 		commandChars = commandStringCombined.split('');
 		console.log(commandChars);
 		
-		device1.writeBytes('CHANGE_ME', commandChars, function(err) { console.log("error"); console.log(err); });
+		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
 
 		newCommand = 1;
     });
+    
+    socket.on('submitIndoorStart', function(command) {
+		
+		var commandString = command.toString();
+		
+		var commandChars = commandString.split('');
+		
+		device1.writeByte(141, function(err) { console.log("error"); console.log(err); });
+		
+		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
+		
+		console.log(commandChars);
+		
+		newCommand = 1;
+	});
+	
+	socket.on('submitIndoorDest', function(command) {
+		
+		var commandString = command.toString();
+		
+		var commandChars = commandString.split('');
+		
+		device1.writeByte(142, function(err) { console.log("error"); console.log(err); });
+		
+		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
+		
+		console.log(commandChars);
+		
+		newCommand = 1;
+	});
     
     // AUTOMATIC LOG UPDATING
 
