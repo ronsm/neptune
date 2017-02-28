@@ -18,6 +18,12 @@
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
  * 
+ * NOTES: Below are some important notes regarding usage of this program.
+ *    1) To send a message from the Navigation Controller and have it displayed on
+ *       the end-user log (on the web GUI), you must preface the string in the
+ *       'Serial.print()' command with "[NAV-CON]" and end the string with "\n".
+ *       Example: Serial.print("[NAV-CON] The current heading is 234* \n");s
+ * 
  * ATTRIBUTIONS: This project uses and derives open source code and packages from
  * various authors, which are attributed here where possible.
  *    1) "Arduino-based Ultrasonic Radar" by Ashutosh Bhatt
@@ -51,8 +57,14 @@ int speedSel;
 // Received command handling
 int lastCommand = 0;
 String lastCoord = "";
+double lastCoordLat;
+double lastCoordLon;
 String lastIndoorStartCoord = "";
 String lastIndoorDestCoord = "";
+int lastIndoorStartCoordX;
+int lastIndoorStartCoordY;
+int lastIndoorDestCoordX;
+int lastIndoorDestCoordY;
 
 // Actuator command handling
 int actuationCmd = 0;
@@ -93,6 +105,7 @@ void useInterrupt(boolean);
 
 // IMU
 MPU9250 IMU;
+double lastKnownHeading;
 
 /* Core system functions */
 
@@ -133,22 +146,22 @@ void setup(){
   Serial.print("SAFETY: OK \n");
 
   // IMU
-//  byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
-//  Serial.print("MPU9250 "); Serial.print("IMU is at address: "); Serial.print(c, HEX);
-//
-//  if (c == 0x71){
-//    Serial.println("MPU9250 is online...");
-//
-//    IMU.MPU9250SelfTest(IMU.SelfTest); // Self-test
-//    IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias); // Calibration
-//    IMU.initMPU9250(); // Initialise
-//    byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963); // Test magnetometer
-//    IMU.initAK8963(IMU.magCalibration);
-//  }
-//  else{
-//    Serial.print("Could not connect to MPU9250: 0x");
-//    Serial.println(c, HEX);
-//  }
+  byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
+  Serial.print("MPU9250 "); Serial.print("IMU is at address: "); Serial.print(c, HEX);
+
+  if (c == 0x71){
+    Serial.println("MPU9250 is online...");
+
+    IMU.MPU9250SelfTest(IMU.SelfTest); // Self-test
+    IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias); // Calibration
+    IMU.initMPU9250(); // Initialise
+    byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963); // Test magnetometer
+    IMU.initAK8963(IMU.magCalibration);
+  }
+  else{
+    Serial.print("Could not connect to MPU9250: 0x");
+    Serial.println(c, HEX);
+  }
   Serial.print("IMU: OK \n");
 
   // Ready
@@ -180,8 +193,12 @@ void loop(){
   
   //IMU
   //Serial.println(getHeading());
-  
+
   //outdoorAutoController();
+
+  delay(2000);
+  
+  Serial.print("[NAV-CON] This is a test of Serial communication \n");
 }
 
 /* I2C cimmunication handlers */
@@ -280,6 +297,7 @@ void receiveEvent(int byteCount){
   }
 
   if(byteCount > 1 && (lastCommand == 141)){
+    lastIndoorStartCoord = "";
     while(1 < Wire.available()){
       int c = Wire.read();
       lastIndoorStartCoord += c;
@@ -287,10 +305,21 @@ void receiveEvent(int byteCount){
     int x = Wire.read();
     lastIndoorStartCoord += x;
 
-    Serial.println(lastIndoorStartCoord);
+    String startCoordY = lastIndoorStartCoord.substring(1, 4);
+    String startCoordX = lastIndoorStartCoord.substring(5);
+
+    lastIndoorStartCoordY = startCoordY.toInt();
+    lastIndoorStartCoordX = startCoordX.toInt();   
+
+    //Serial.println(lastIndoorStartCoord);
+    Serial.print(lastIndoorStartCoordY);
+    Serial.print(", ");
+    Serial.print(lastIndoorStartCoordX);
+    Serial.println();
   }
 
   if(byteCount > 1 && (lastCommand == 142)){
+    lastIndoorDestCoord = "";
     while(1 < Wire.available()){
       int c = Wire.read();
       lastIndoorDestCoord += c;
@@ -298,7 +327,17 @@ void receiveEvent(int byteCount){
     int x = Wire.read();
     lastIndoorDestCoord += x;
 
-    Serial.println(lastIndoorDestCoord);
+    String destCoordY = lastIndoorDestCoord.substring(1, 4);
+    String destCoordX = lastIndoorDestCoord.substring(5);
+ 
+    lastIndoorDestCoordY = destCoordY.toInt();
+    lastIndoorDestCoordX = destCoordX.toInt();
+
+    //Serial.println(lastIndoorDestCoord);
+    Serial.print(lastIndoorDestCoordY);
+    Serial.print(", ");
+    Serial.print(lastIndoorDestCoordX);
+    Serial.println();
   }
   
   if(byteCount > 20){
@@ -310,9 +349,32 @@ void receiveEvent(int byteCount){
     int x = Wire.read();    // receive byte as an integer
     lastCoord += x;
 
-    Serial.print(lastCoord);
-    Serial.print("\n");
+    String coordLat = lastCoord.substring(1,11);
+    String coordLon = lastCoord.substring(12);
 
+    Serial.println(coordLat);
+    Serial.println(coordLon);
+
+    String coordLat1 = coordLat.substring(0,2);
+    String coordLat2 = coordLat.substring(3);
+
+    String coordLon1 = coordLon.substring(0,2);
+    String coordLon2 = coordLon.substring(3);
+
+    Serial.print(coordLat1);
+    Serial.print(".");
+    Serial.println(coordLat2);
+
+    String coordLatTmp = coordLat1 + "." + coordLat2;
+    String coordLonTmp = coordLon1 + "." + coordLon2;
+
+    float coordLatTmpFloat = coordLatTmp.toFloat();
+    float coordLonTmpFloat = coordLonTmp.toFloat();
+
+    Serial.print(coordLatTmpFloat,6);
+    Serial.print(",");
+    Serial.println(coordLonTmpFloat,6);
+    
     lastCommand = 3;
   }
 }
@@ -330,9 +392,6 @@ void requestEvent(){
       break;
     case 2:
       Wire.write("Shutting down...");
-      break;
-    case 140:
-      Wire.write("Coord. received!");
       break;
     default: 
       Serial.print(lastCommand);
@@ -354,7 +413,7 @@ void outdoorAutoController(){
   currentPosition = getCurrentPosition();
   destinationPosition = getDestinationPosition();
 
-  currentHeading = getCurrentHeading();
+  currentHeading = lastKnownHeading;
   destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
   
   calcMoveToHeading(destinationHeading, currentHeading);
@@ -391,7 +450,7 @@ coord getDestinationPosition(){
  * Retreives the vehicles current heading from the IMU compass. 
  */
 double getCurrentHeading(){
-  int currentHeading;
+  double currentHeading;
 
   currentHeading = 180;
 
@@ -687,8 +746,8 @@ double getHeading(){
     IMU.readMagData(IMU.magCount);  // Read the x/y/z adc values
     IMU.getMres();
 
-    IMU.magbias[0] = 0;
-    IMU.magbias[1] = 200;
+    IMU.magbias[0] = 100;
+    IMU.magbias[1] = 0;
     IMU.magbias[2] = 0;
     
     IMU.mx = (float)IMU.magCount[0]*IMU.mRes*IMU.magCalibration[0] - IMU.magbias[0];
@@ -724,11 +783,13 @@ double getHeading(){
       }
       else{
         if (IMU.my > 0){
-          return (90 - (atan(IMU.mx/IMU.my)*180/pi));
+          lastKnownHeading = (90 - (atan(IMU.mx/IMU.my)*180/pi));
+          return lastKnownHeading;
         }
         else{
-          return (270 - (atan(IMU.mx/IMU.my)*180/pi));
+          lastKnownHeading = (270 - (atan(IMU.mx/IMU.my)*180/pi));
+          return lastKnownHeading;
         }
       }
-    } 
+    }
 }

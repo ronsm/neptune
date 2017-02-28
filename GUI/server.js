@@ -104,22 +104,32 @@ console.log('Server running at http://127.0.0.1:8000/');
 
 // SERIALPORT
 
-var port = new SerialPort("/dev/ttyACM0", {
-	baudRate: 57600
-});
+// NOTE: To start this application without an Arduino device connected
+// to the bottom-right USB port, you must comment out everything from
+// the next line down to the Socket.io section.
 
-port.on("open", function() {
-	console.log('Opened serial port @ 57600 baud');
-	
-	var serialMsg;
+//'use strict';
 
-	port.on('data', function(data) {
-		console.log('' + data);
-		serialMsg = '[NAV-CON] ' + data;
-		io.emit('logWrite', serialMsg);
-	});
-	
-});
+//const parsers = SerialPort.parsers;
+
+//const parser = new parsers.readline({
+	//delimiter: '\r\n'
+//});
+
+//var port = new SerialPort("/dev/ttyACM0", {
+	//baudRate: 57600,
+	//parser: SerialPort.parsers.readline('\n')
+//});
+
+//port.on("open", function(){
+	//console.log('Opened serial port @ 57600 baud');
+//});
+
+//port.on("data", function(data){
+	//console.log('' + data);
+	//serialMsg = '' + data + '\n';
+	//io.emit('logWrite', serialMsg);
+//});
 
 // SOCKET.IO
 
