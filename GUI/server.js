@@ -102,6 +102,15 @@ server = http.createServer(function (request, response) {
 server.listen(8000);
 console.log('Server running at http://127.0.0.1:8000/');
 
+// ERROR HANDLER
+
+function errHandler(err){
+	if(err != null){
+		var errString = '[SERVER] ' + err + '\n';
+		io.emit('logWrite', errString);	
+	}
+}
+
 // SERIALPORT
 
 // NOTE: To start this application without an Arduino device connected
@@ -151,14 +160,14 @@ io.sockets.on('connection', function(socket){
 	// POWER MANAGEMENT
     socket.on('powerOnCmd', function(command){
 		console.log(command);
-		device1.writeByte(1, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(1, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
 
     socket.on('powerOffCmd', function(command){
 		console.log(command);
-		device1.writeByte(2, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(2, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -166,28 +175,28 @@ io.sockets.on('connection', function(socket){
     // MODE SELECTION
     socket.on('modeSelAuto', function(command){
 		console.log(command);
-		device1.writeByte(10, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(10, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
 
     socket.on('modeSelManual', function(command){
 		console.log(command);
-		device1.writeByte(11, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(11, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
     
     socket.on('modeSelIndoor', function(command){
 		console.log(command);
-		device1.writeByte(12, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(12, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
 
     socket.on('modeSelOutdoor', function(command){
 		console.log(command);
-		device1.writeByte(13, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(13, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -196,7 +205,7 @@ io.sockets.on('connection', function(socket){
     
     socket.on('navManForward', function(command){
 		console.log(command);
-		device1.writeByte(100, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(100, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -245,7 +254,7 @@ io.sockets.on('connection', function(socket){
 		console.log('rudder position:');
 		console.log(commandAdjusted);
 		
-		device1.writeByte(commandAdjusted, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(commandAdjusted, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -291,7 +300,7 @@ io.sockets.on('connection', function(socket){
 		console.log('rudder position:');
 		console.log(commandAdjusted);
 		
-		device1.writeByte(commandAdjusted, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(commandAdjusted, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -300,7 +309,7 @@ io.sockets.on('connection', function(socket){
     
     socket.on('submitCoordCmd', function(command){
 		
-		device1.writeByte(140, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(140, function(err) { errHandler(err) });
 		
 		var commandString = command.toString();
 		console.log(commandString);
@@ -325,7 +334,7 @@ io.sockets.on('connection', function(socket){
 		commandChars = commandStringCombined.split('');
 		console.log(commandChars);
 		
-		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
+		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
@@ -336,9 +345,9 @@ io.sockets.on('connection', function(socket){
 		
 		var commandChars = commandString.split('');
 		
-		device1.writeByte(141, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(141, function(err) { errHandler(err) });
 		
-		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
+		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
 		
 		console.log(commandChars);
 		
@@ -351,9 +360,9 @@ io.sockets.on('connection', function(socket){
 		
 		var commandChars = commandString.split('');
 		
-		device1.writeByte(142, function(err) { console.log("error"); console.log(err); });
+		device1.writeByte(142, function(err) { errHandler(err) });
 		
-		device1.writeBytes('COORDINATES', commandChars, function(err) { console.log("error"); console.log(err); });
+		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
 		
 		console.log(commandChars);
 		

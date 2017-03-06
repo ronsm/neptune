@@ -11,8 +11,8 @@
  * https://creativecommons.org/licenses/by-nc/4.0/.
  *
  * @package    Neptune
- * @author(s)  Ronnie Smith <ronniesmith@outlook.com>
- *             Alex James <english.james@live.fr>
+ * @author(s)  Ronnie Smith
+ *             Alex James
  * @copyright  2017, Neptune
  * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
@@ -40,6 +40,7 @@
 #include <MPU9250.h>
 #include <quaternionFilters.h>
 #include <SPI.h>
+#include <QueueArray.h>
 
 /* Definitions */
 #define GPSECHO true
@@ -55,6 +56,7 @@ int rudderPos;
 int speedSel;
 
 // Received command handling
+QueueArray <int> commandQueue;
 int lastCommand = 0;
 String lastCoord = "";
 double lastCoordLat;
@@ -176,7 +178,10 @@ void loop(){
   
   if(actuationCmd != lastActuationCmd){
     Wire.beginTransmission(3);
-    Wire.write(actuationCmd);
+    //Wire.write(actuationCmd);
+    if(!commandQueue.isEmpty()){
+      Wire.write(commandQueue.dequeue());
+    }
     Wire.endTransmission();
     lastActuationCmd = 0;
     actuationCmd = 0;
@@ -194,10 +199,10 @@ void loop(){
   //IMU
   //Serial.println(getHeading());
 
-  //outdoorAutoController();
+  outdoorAutoController();
 
   delay(2000);
-  
+
   Serial.print("[NAV-CON] This is a test of Serial communication \n");
 }
 
@@ -216,6 +221,8 @@ void receiveEvent(int byteCount){
   if(byteCount == 1){
     while(Wire.available()) {
       number = Wire.read();
+
+      commandQueue.enqueue(number);
 
       if(number == 255){
         Serial.print("ACK: RESET \n");

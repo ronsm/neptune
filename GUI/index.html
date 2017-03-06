@@ -215,6 +215,19 @@
              textarea.scrollTop = textarea.scrollHeight;
          });
 
+		 function localLogWrite(logMessage){
+			 var today = new Date();
+             var date = today.getDate()+'-'+(today.getMonth()+1)+'-'+today.getFullYear();
+             var time = today.getHours()+':'+today.getMinutes()+':'+today.getSeconds();
+             var logTimeStamp = '['+date+' '+time+']'+' ';
+
+             $('#LOG').append(logTimeStamp);
+             var submitMessage = "[BROWSER] "+logMessage;
+             $('#LOG').append(submitMessage);
+             var textarea = document.getElementById('LOG');
+             textarea.scrollTop = textarea.scrollHeight;
+		 }
+
          setInterval(function(){
              socket.emit('logUpdate', "logUpdate");
          }, 100);
@@ -222,10 +235,11 @@
          <!-- MAP - OUTDOOR -->
 
          $(document).off('click', '#SUBMIT_COORD').on('click', '#SUBMIT_COORD', function (e) {
-           console.log('click');
-
            var coord = $("#coord_box").val();
            var coordString = coord.toString();
+
+		   var msg = "New outdoor destination coordinate: " + coordString + "\n";
+		   localLogWrite(msg);
 
            socket.emit('submitCoordCmd', coordString);
            e.preventDefault();
@@ -238,6 +252,8 @@
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
 		   
 		   console.log(coordString);
+		   var msg = "New indoor origin coordinate: " + coordString + "\n";
+		   localLogWrite(msg);
 		   
 		   socket.emit('submitIndoorStart', coordString);
 		   e.preventDefault();
@@ -249,6 +265,8 @@
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
 		   
 		   console.log(coordString);
+		   var msg = "New indoor destination coordinate: " + coordString + "\n";
+		   localLogWrite(msg);
 		   
 		   socket.emit('submitIndoorDest', coordString);
 		   e.preventDefault();
@@ -283,34 +301,7 @@
             <ul class="nav navbar-top-links navbar-right">
                <li class="dropdown">
                   <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                  <i class="fa fa-envelope fa-fw"></i> <i class="fa fa-caret-down"></i>
-                  </a>
-                  <ul class="dropdown-menu dropdown-messages">
-                     <li>
-                        <a href="#">
-                           <div>
-                              <strong>Neptune</strong>
-                              <span class="pull-right text-muted">
-                              <em>Yesterday</em>
-                              </span>
-                           </div>
-                           <div>Welcome to the Neptune Dashboard. To find out more about how to...</div>
-                        </a>
-                     </li>
-                     <li class="divider"></li>
-                     <li>
-                        <a class="text-center" href="#">
-                        <strong>Read All Messages</strong>
-                        <i class="fa fa-angle-right"></i>
-                        </a>
-                     </li>
-                  </ul>
-                  <!-- /.dropdown-messages -->
-               </li>
-               <!-- /.dropdown -->
-               <li class="dropdown">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                  <i class="fa fa-tasks fa-fw"></i> <i class="fa fa-caret-down"></i>
+                  <i class="fa fa-tasks fa-fw">&#9881</i> <i class="fa fa-caret-down"></i>
                   </a>
                   <ul class="dropdown-menu dropdown-tasks">
                      <li>
@@ -337,44 +328,6 @@
                      </li>
                   </ul>
                   <!-- /.dropdown-tasks -->
-               </li>
-               <!-- /.dropdown -->
-               <li class="dropdown">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                  <i class="fa fa-bell fa-fw"></i> <i class="fa fa-caret-down"></i>
-                  </a>
-                  <ul class="dropdown-menu dropdown-alerts">
-                     <li>
-                        <a href="#">
-                           <div>
-                              <i class="fa fa-comment fa-fw"></i> Poor Wireless Connection
-                              <span class="pull-right text-muted small">4 minutes ago</span>
-                           </div>
-                        </a>
-                     </li>
-                     <li class="divider"></li>
-                     <li>
-                        <a class="text-center" href="#">
-                        <strong>See All Alerts</strong>
-                        <i class="fa fa-angle-right"></i>
-                        </a>
-                     </li>
-                  </ul>
-                  <!-- /.dropdown-alerts -->
-               </li>
-               <!-- /.dropdown -->
-               <li class="dropdown">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                  <i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
-                  </a>
-                  <ul class="dropdown-menu dropdown-user">
-                     <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
-                     </li>
-                     <li class="divider"></li>
-                     <li><a href="login.html"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
-                     </li>
-                  </ul>
-                  <!-- /.dropdown-user -->
                </li>
                <!-- /.dropdown -->
             </ul>
