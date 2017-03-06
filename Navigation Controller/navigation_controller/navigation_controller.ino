@@ -176,16 +176,17 @@ void setup(){
 void loop(){
   delay(400);
   
-  if(actuationCmd != lastActuationCmd){
-    Wire.beginTransmission(3);
-    //Wire.write(actuationCmd);
-    if(!commandQueue.isEmpty()){
-      Wire.write(commandQueue.dequeue());
-    }
-    Wire.endTransmission();
-    lastActuationCmd = 0;
-    actuationCmd = 0;
+  Wire.beginTransmission(3);
+  //Wire.write(actuationCmd);
+  if(commandQueue.count() > 0){
+    //Wire.write(commandQueue.dequeue());
+    Serial.print(commandQueue.dequeue());
+    Serial.print("\n");
   }
+  else{
+    Wire.write(0);
+  }
+  Wire.endTransmission();
 
   // Radar
   long rangeDuration;
@@ -199,11 +200,11 @@ void loop(){
   //IMU
   //Serial.println(getHeading());
 
-  outdoorAutoController();
+  //outdoorAutoController();
 
-  delay(2000);
+  //delay(2000);
 
-  Serial.print("[NAV-CON] This is a test of Serial communication \n");
+  //Serial.print("[NAV-CON] This is a test of Serial communication \n");
 }
 
 /* I2C cimmunication handlers */
@@ -222,69 +223,57 @@ void receiveEvent(int byteCount){
     while(Wire.available()) {
       number = Wire.read();
 
-      commandQueue.enqueue(number);
-
+      if(number != 0){
+        commandQueue.enqueue(number);
+      }
+      lastCommand = number;
+      
       if(number == 255){
         Serial.print("ACK: RESET \n");
-        lastCommand = number;
-        actuationCmd = number;
       }
       if(number == 1){
         Serial.print("ACK: POWER ON \n");
-        lastCommand = number;
-        actuationCmd = number;
       }
       if(number == 2){
         Serial.print("ACK: POWER OFF \n");
-        lastCommand = number;
-        actuationCmd = number;
       }
       if(number == 10){
         Serial.print("ACK: AUTOMATIC MODE \n");
-        lastCommand = number;
         controlMode = true;
       }
       if(number == 11){
         Serial.print("ACK: MANUAL MODE \n");
-        lastCommand = number;
         controlMode = false;
       }
       if(number == 12){
         Serial.print("ACK: INDOOR MODE \n");
-        lastCommand = number;
         environmentMode = true;
       }
       if(number == 13){
         Serial.print("ACK: OUTDOOR MODE \n");
-        lastCommand = number;
         environmentMode = false;
       }
       if(number == 100){
         Serial.print("ACK: FORWARD 1U \n");
-        lastCommand -number;
       }
       if(number >= 101 && number <= 111){
         Serial.print("ACK: RUDDER POS:");
-        lastCommand = number;
         rudderPos = 101 - number;
         Serial.print(rudderPos);
         Serial.print("\n");
       }
       if(number == 112){
         Serial.print("ACK: INVALID RUDDER POS:");
-        lastCommand = number;
         Serial.print("\n");
       }
       if(number >= 120 && number <= 129){
         Serial.print("ACK: MOTOR SPEED: ");
-        lastCommand = number;
         speedSel = 120 - number;
         Serial.print(speedSel);
         Serial.print("\n");
       }
       if(number == 130){
         Serial.print("ACK: INVALID SPEED SEL:");
-        lastCommand = number;
         Serial.print("\n");
       }
       if(number == 140){
@@ -293,14 +282,11 @@ void receiveEvent(int byteCount){
       }
       if(number == 141){
         Serial.print("ACK: INDOOR START COORDINATE INCOMING \n");
-        lastCommand = number;
       }
       if(number == 142){
         Serial.print("ACK: INDOOR DEST COORDINATE INCOMING \n");
-        lastCommand = number;
       }
     }
-  actuationCmd = lastCommand;
   }
 
   if(byteCount > 1 && (lastCommand == 141)){
@@ -401,7 +387,7 @@ void requestEvent(){
       Wire.write("Shutting down...");
       break;
     default: 
-      Serial.print(lastCommand);
+      //Serial.print(lastCommand);
       Serial.print("\n");
       Wire.write("READY           ");
     break;
