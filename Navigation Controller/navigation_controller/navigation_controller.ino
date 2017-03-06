@@ -71,6 +71,7 @@ int lastIndoorDestCoordY;
 // Actuator command handling
 int actuationCmd = 0;
 int lastActuationCmd = 100;
+bool awaitingResponse = false;
 
 // 'Outdoor - Auto'
 int initialLoop = 0;
@@ -175,13 +176,16 @@ void setup(){
  */
 void loop(){
   delay(400);
+
+  if(awaitingResponse == true){
+     checkForResponse();
+  }
   
   Wire.beginTransmission(3);
-  //Wire.write(actuationCmd);
   if(commandQueue.count() > 0){
-    //Wire.write(commandQueue.dequeue());
-    Serial.print(commandQueue.dequeue());
-    Serial.print("\n");
+    Wire.write(commandQueue.dequeue());
+    //Serial.print(commandQueue.dequeue());
+    //Serial.print("\n");
   }
   else{
     Wire.write(0);
@@ -200,7 +204,7 @@ void loop(){
   //IMU
   //Serial.println(getHeading());
 
-  //outdoorAutoController();
+  outdoorAutoController();
 
   //delay(2000);
 
@@ -387,12 +391,65 @@ void requestEvent(){
       Wire.write("Shutting down...");
       break;
     default: 
-      //Serial.print(lastCommand);
-      Serial.print("\n");
       Wire.write("READY           ");
     break;
   }
 }
+
+/* Actuation Controller Interfacing */
+
+/**
+ * Polls the actuation controller to see if it has completed its
+ * last command.
+ */
+void checkForResponse(){
+  Wire.requestFrom(3, 1);
+
+  while (Wire.available()) {
+    int check = Wire.read();
+    if(check == 250){ // 250 = done
+      awaitingResponse = false;
+    }
+  }
+}
+
+/**
+ * Sends a turn command to the actuation controller of a specific
+ * direction and number of degrees.
+ */
+void turnByDegrees(bool direction, int degrees){
+  Wire.beginTransmission(3);
+  if(direction == false){
+    Wire.write(201); // 201 = turn left
+  }
+  else{
+    Wire.write(202); // 202 = turn right
+  }
+  delay(100);
+  Wire.write(degrees);
+  Wire.endTransmission();
+  awaitingResponse = true;
+}
+
+/**
+ * Moves the hovercraft forward until it detects an obstacle. Calls
+ * the obstacle evasion functions if obstacle detected, which runs before
+ * returning to the main controller.
+ */
+ void moveForward(){
+  Serial.println("moveForward()");
+  if(obstacleDetection()){
+    Wire.beginTransmission(3);
+    Wire.write(101); // 101 = stop
+    Wire.endTransmission();
+    bool res = navigateObstacle();
+  }
+  else{
+    Wire.beginTransmission(3);
+    Wire.write(100); // 100 = forward at steady pace
+    Wire.endTransmission();
+  }
+ }
 
 /* Outdoor - Auto functions */
 
@@ -410,6 +467,8 @@ void outdoorAutoController(){
   destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
   
   calcMoveToHeading(destinationHeading, currentHeading);
+
+  moveForward();
 }
 
 /**
@@ -448,6 +507,14 @@ double getCurrentHeading(){
   currentHeading = 180;
 
   return currentHeading;
+}
+
+bool navigateObstacle(){
+  Serial.println("navigateObstacle()");
+  bool res;
+  // DO SOMETHING
+  res = true;
+  return res;
 }
 
 /**
@@ -511,19 +578,32 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
   }
 
   if(turnLeftNotRight == false){
-    //turnRight(degTurn);
     Serial.print("Turning left: ");
     Serial.print(degTurn);
     Serial.print("\n");
+    turnByDegrees(false, degTurn);
   }
   if(turnLeftNotRight == true){
     Serial.print("Turning right: ");
     Serial.print(degTurn);
     Serial.print("\n");
-    //turnLeft(degTurn);
+    turnByDegrees(true, degTurn);
   }
 
   return;
+}
+
+/* Obstacle Detection */
+
+/**
+ * Checks if it is safe to move forward, returns false if yes.
+ */
+bool obstacleDetection(){
+  Serial.println("obstacleDetection()");
+  bool res;
+  // DO SOMETHING
+  res = false;
+  return res;
 }
 
 /* Radar */
