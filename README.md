@@ -6,7 +6,7 @@ Repository for the Neptune Autonomous Hovercraft project.
 We have used various packages and utilities to build Neptune. Most of which are listed below, grouped
 according to the part of the system they are utilized by.
 
-### Packages Used
+### Packages used
 * [Raspbian](https://www.raspbian.org) - Operating system
 * [Node.JS](https://nodejs.org/en/) - Runtime environment
 * [SB Admin 2](https://startbootstrap.com/template-overviews/sb-admin-2/) - Bootstrap framework for GUI
