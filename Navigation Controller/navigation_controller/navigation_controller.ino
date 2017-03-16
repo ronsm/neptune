@@ -27,7 +27,9 @@
  * ATTRIBUTIONS: This project uses and derives open source code and packages from
  * various authors, which are attributed here where possible.
  *    1) "Arduino-based Ultrasonic Radar" by Ashutosh Bhatt
- *        http://www.engineersgarage.com/contribution/arduino-based-ultrasonic-radar
+ *       http://www.engineersgarage.com/contribution/arduino-based-ultrasonic-radar
+ *    2) "Bearing between two points on the earth" by Haishi
+ *       http://haishibai.blogspot.co.uk/2009/09/bearing-between-two-points-on-earth.html
  */
 
 
@@ -78,9 +80,21 @@ int initialLoop = 0;
 int currentDistances[4];
 const float pi = 3.141593;
 
-// I/O configuration
-const int radarTrigPin = 22;
-const int radarEchoPin = 23;
+// Ultrasonic sensors
+const int radarTrigPin = 52;
+const int radarEchoPin = 50;
+
+const int distLeftTrig = 48;
+const int distLeftEcho = 46;
+
+const int distCenterTrig = 44;
+const int distCenterEcho = 42;
+
+const int distRightTrig = 40;
+const int distRightEcho = 38;
+
+bool obstacleDirection[3];
+bool obstacleCritical = false;
 
 // Radar
 Servo radarServo;
@@ -89,7 +103,6 @@ int actual_radar_angle;
 int bestPossibleDirection = 0;
 
 // Mapping
-bool maparray[50][25];    
 int prevX[20];                 
 int prevY[20];
 int pos;
@@ -109,6 +122,14 @@ void useInterrupt(boolean);
 // IMU
 MPU9250 IMU;
 double lastKnownHeading;
+int mxcalmax = 0;
+int mxcalmin = 1000;
+int mycalmax = 0;
+int mycalmin = 1000;
+int MagX;
+int MagY;
+double prevacctime = 0;
+double totaldistance;
 
 /* Core system functions */
 
@@ -133,6 +154,16 @@ void setup(){
   radarServo.write(90);
   Serial.print("Radar: OK \n");
 
+  // Distance sensors
+  pinMode(distLeftTrig, OUTPUT);
+  pinMode(distLeftEcho, INPUT);
+
+  pinMode(distCenterTrig, OUTPUT);
+  pinMode(distCenterEcho, INPUT);
+
+  pinMode(distRightTrig, OUTPUT);
+  pinMode(distRightEcho, INPUT);
+
   // GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
@@ -147,6 +178,11 @@ void setup(){
   rudderPos = 6;
   speedSel = 0;
   Serial.print("SAFETY: OK \n");
+
+  // Navigation
+  lastCoordLat = 0.0;
+  lastCoordLon = 0.0;
+  Serial.print("NAVIGATION: OK \n");
 
   // IMU
   byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
@@ -175,28 +211,35 @@ void setup(){
  * This function will run continuously when no other function is running.
  */
 void loop(){
-  delay(400);
+  delay(200);
 
+  statusUpdate();
+  
   if(awaitingResponse == true){
      checkForResponse();
   }
-  
-  Wire.beginTransmission(3);
-  if(commandQueue.count() > 0){
-    Wire.write(commandQueue.dequeue());
-    //Serial.print(commandQueue.dequeue());
-    //Serial.print("\n");
-  }
   else{
-    Wire.write(0);
+    sendActuationCommand();
+
+    if(environmentMode == false && controlMode == true){
+      outdoorAutoController(); 
+    }
+    else if(environmentMode == true && controlMode == true){
+      indoorAutoController();
+    }
+    else{
+      manualModeController();
+    }
   }
-  Wire.endTransmission();
 
   // Radar
-  long rangeDuration;
-  long rangeDistance;
-  int averageDistance = 0;
-  //radarScan();
+//  long rangeDuration;
+//  long rangeDistance;
+//  int averageDistance = 0;
+//  radarScan();
+
+  // Distance sensors
+  //obstacleDetection();
 
   // GPS
   //gpsLoop();
@@ -204,14 +247,12 @@ void loop(){
   //IMU
   //Serial.println(getHeading());
 
-  outdoorAutoController();
-
   //delay(2000);
 
   //Serial.print("[NAV-CON] This is a test of Serial communication \n");
 }
 
-/* I2C cimmunication handlers */
+/* Server communication handlers */
 
 /**
  * Handles data received from the master.
@@ -368,12 +409,33 @@ void receiveEvent(int byteCount){
     float coordLatTmpFloat = coordLatTmp.toFloat();
     float coordLonTmpFloat = coordLonTmp.toFloat();
 
+    lastCoordLat = coordLatTmpFloat;
+    lastCoordLon = coordLonTmpFloat;
+
     Serial.print(coordLatTmpFloat,6);
     Serial.print(",");
     Serial.println(coordLonTmpFloat,6);
     
     lastCommand = 3;
   }
+}
+
+void statusUpdate(){
+  if(controlMode)
+    { Serial.println(10000); } // MANUAL
+  else
+    { Serial.println(10001); } // AUTO
+
+  if(environmentMode)
+    { Serial.println(20000); } // OUTDOOR
+  else
+    { Serial.println(20001); } // INDOOR
+
+  int speedStat = 3000 + speedSel;
+  Serial.println(speedStat);
+
+  int rudderStat = 4000 + rudderPos;
+  Serial.println(rudderStat);
 }
 
 /**
@@ -391,12 +453,28 @@ void requestEvent(){
       Wire.write("Shutting down...");
       break;
     default: 
-      Wire.write("READY           ");
+      Wire.write("I2C: ACKNOWLEDGE");
     break;
   }
 }
 
-/* Actuation Controller Interfacing */
+/* Actuation Controller communications */
+
+/**
+ * Sends the most recent command to the actuation controller.
+ */
+void sendActuationCommand(){
+  Wire.beginTransmission(3);
+  if(commandQueue.count() > 0){
+    Wire.write(commandQueue.dequeue());
+    //Serial.print(commandQueue.dequeue());
+    //Serial.print("\n");
+  }
+  else{
+    Wire.write(0);
+  }
+  Wire.endTransmission();
+}
 
 /**
  * Polls the actuation controller to see if it has completed its
@@ -409,6 +487,55 @@ void checkForResponse(){
     int check = Wire.read();
     if(check == 250){ // 250 = done
       awaitingResponse = false;
+    }
+  }
+}
+
+/**
+ * Carries out the emrgency stop proceedure.
+ */
+void emergencyStop(){
+  // Instruct actuation controller to stop
+  commandQueue.enqueue(2);
+  commandQueue.enqueue(120);
+  commandQueue.enqueue(125);
+
+  // Reset GUI
+  speedSel = 0;
+  rudderPos = 6;
+}
+
+/**
+ * Shuts down the rear propellor to slow down.
+ */
+void softStop(){
+  commandQueue.enqueue(120);
+}
+
+/* Indoor/Outdoor - Manual functions */
+
+/**
+ * This is the mode controller for the manual mode.
+ */
+void manualModeController(){
+  sendActuationCommand();
+
+  if(obstacleDetection()){
+    if(obstacleCritical){
+      emergencyStop();
+      Serial.print("[NAV-CON] EMERGENCY STOP! Critical obstacle detected. You must press OFF and then ON to continue. \n");
+    }
+    if(obstacleDirection[0] == true){
+      softStop();
+      Serial.print("[NAV-CON] Obstacled detected to LEFT of vehicle. Adjust rudder accordingly before continuing. \n");
+    }
+    if(obstacleDirection[1] == true){
+      softStop();
+      Serial.print("[NAV-CON] Obstacled detected to FRONT of vehicle. Adjust rudder accordingly before continuing. \n");
+    }
+    if(obstacleDirection[2] == true){
+      softStop();
+      Serial.print("[NAV-CON] Obstacled detected to RIGHT of vehicle. Adjust rudder accordingly before continuing. \n");
     }
   }
 }
@@ -442,6 +569,7 @@ void turnByDegrees(bool direction, int degrees){
     Wire.beginTransmission(3);
     Wire.write(101); // 101 = stop
     Wire.endTransmission();
+    radarScan();
     bool res = navigateObstacle();
   }
   else{
@@ -449,7 +577,18 @@ void turnByDegrees(bool direction, int degrees){
     Wire.write(100); // 100 = forward at steady pace
     Wire.endTransmission();
   }
- }
+}
+
+/**
+ * Moves the hovercraft forward for a short burst regardless of obstacle detection status.
+ */
+void sudoMoveForward(){
+  Serial.println("sudoMoveForward()");
+  Wire.beginTransmission(3);
+  Wire.write(100);
+  delay(200);
+  Wire.write(101);
+}
 
 /* Outdoor - Auto functions */
 
@@ -457,18 +596,25 @@ void turnByDegrees(bool direction, int degrees){
  * This is the mode controller for the Outdoor - Auto mode.
  */
 void outdoorAutoController(){
-  double destinationHeading, currentHeading;
-  coord currentPosition, destinationPosition;
-  
-  currentPosition = getCurrentPosition();
-  destinationPosition = getDestinationPosition();
 
-  currentHeading = lastKnownHeading;
-  destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
+  if(lastCoordLat == 0.0 && lastCoordLon == 0.0){
+    Serial.print("[NAV-CON] Please provide a destination coordinate... \n");
+  }
+  else{
+    double destinationHeading, currentHeading;
+    coord currentPosition, destinationPosition;
+    
+    currentPosition = getCurrentPosition();
+    destinationPosition.lat = lastCoordLat;
+    destinationPosition.lon = lastCoordLon;
   
-  calcMoveToHeading(destinationHeading, currentHeading);
-
-  moveForward();
+    currentHeading = lastKnownHeading;
+    destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
+    
+    calcMoveToHeading(destinationHeading, currentHeading);
+  
+    moveForward();
+  }
 }
 
 /**
@@ -509,12 +655,45 @@ double getCurrentHeading(){
   return currentHeading;
 }
 
+/**
+ * Implements the bug algorithm to circumnavigate the obstacle.
+ */
 bool navigateObstacle(){
   Serial.println("navigateObstacle()");
   bool res;
-  // DO SOMETHING
+
+  while(obstacleDetection()){
+    navigateObstacleStep();
+  }
+  
   res = true;
   return res;
+}
+
+/**
+ * Carries out one step of the obstacle avoidance procedure.
+ */
+void navigateObstacleStep(){
+  if(obstacleDirection[0] == true && obstacleDirection[1] == false && obstacleDirection[2] == false){
+    sudoMoveForward();
+  }
+  else if(obstacleDirection[0] == false && obstacleDirection[1] == false && obstacleDirection[2] == true){
+    sudoMoveForward();
+  }
+  else if(obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == false){
+    turnByDegrees(true, 90);
+  }
+  else if(obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == false){
+    turnByDegrees(true, 45);
+    sudoMoveForward();
+  }
+  else if(obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == true){
+    turnByDegrees(false, 45);
+    sudoMoveForward();
+  }
+  else{
+    // DO SOMETHING
+  }
 }
 
 /**
@@ -593,6 +772,15 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
   return;
 }
 
+/* Indoor - Auto functions */
+
+/**
+ * This is the mode controller for the Indoor - Auto mode.
+ */
+void indoorAutoController(){
+
+}
+
 /* Obstacle Detection */
 
 /**
@@ -600,9 +788,70 @@ void calcMoveToHeading(double destinationHeading, double currentHeading){
  */
 bool obstacleDetection(){
   Serial.println("obstacleDetection()");
-  bool res;
-  // DO SOMETHING
-  res = false;
+  bool res = false;
+
+  long distance1, distance2, distance3;
+  long duration1, duration2, duration3;
+
+  int i;
+  for(i = 0; i < 3; i++){
+    obstacleDirection[i] = false;
+  }
+
+  digitalWrite(distLeftTrig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(distLeftTrig, HIGH);
+  delayMicroseconds(10); // 10us
+  digitalWrite(distLeftTrig, LOW);
+  duration1 = pulseIn(distLeftEcho, HIGH);
+  distance1 = microsecondsToCentimeters(duration1);
+
+  Serial.print("DISTANCES - Left: ");
+  Serial.print(distance1);
+
+  delay(10);
+
+  digitalWrite(distCenterTrig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(distCenterTrig, HIGH);
+  delayMicroseconds(10); // 10us
+  digitalWrite(distCenterTrig, LOW);
+  duration2 = pulseIn(distCenterEcho, HIGH);
+  distance2 = microsecondsToCentimeters(duration2);
+
+  Serial.print(", Centre: ");
+  Serial.print(distance2);
+
+  delay(10);
+
+  digitalWrite(distRightTrig, LOW);
+  delayMicroseconds(2);
+  digitalWrite(distRightTrig, HIGH);
+  delayMicroseconds(10); // 10us
+  digitalWrite(distRightTrig, LOW);
+  duration3 = pulseIn(distRightEcho, HIGH);
+  distance3 = microsecondsToCentimeters(duration3);
+    
+  Serial.print(", Right: ");
+  Serial.println(distance3);
+
+  if(distance1 < 100){
+     obstacleDirection[0] = true;
+     res = true;
+  }
+  if(distance2 < 100){
+     obstacleDirection[1] = true;
+     res = true;
+  }
+  if(distance3 < 100){
+     obstacleDirection[2] = true;
+     res = true;
+  }
+
+  if(obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == true){
+    obstacleCritical = true;
+  }
+
   return res;
 }
 
@@ -617,9 +866,9 @@ bool obstacleDetection(){
     
   for (radar_angle = 0; radar_angle <= 180; radar_angle = radar_angle + 10){ 
     radarServo.write(radar_angle); 
-    
+
     pos = radar_angle/10;  
-    maparray [prevX[pos]][prevY[pos]] = false;
+    //maparray [prevX[pos]][prevY[pos]] = false;
     
     digitalWrite(radarTrigPin, LOW);
     delayMicroseconds(2);
@@ -628,32 +877,23 @@ bool obstacleDetection(){
     digitalWrite(radarTrigPin, LOW);
     duration = pulseIn(radarEchoPin, HIGH);
     distance = microsecondsToCentimeters(duration);
-    
-    Serial.print("Object Detected at an angle = ");
 
     // Store
     Xaxis = (distance * sin(radar_angle) + 25) / 10;           // get x coordinate according to trigonometry (+50 for placement along the axis)
     Yaxis = (distance * cos(radar_angle)) / 10;                // get y coordinate ''
-    maparray [Xaxis][Yaxis] = true;                            // place obstacle in map array
+    //maparray [Xaxis][Yaxis] = true;                            // place obstacle in map array
     prevX[pos] = Xaxis;                                        // store coordinates in array according to servo position
     prevY[pos] = Yaxis;
 
     if(distance < 200){
       radarDistances[(radar_angle/10)] = distance;
-      Serial.print(radar_angle);
-      Serial.print(" deg and distance = ");
-      Serial.print(distance);
-      Serial.print(" cm");
-      Serial.println();
+      delay(200);
     }
     else{
       radarDistances[radar_angle/10] = 0;
-      Serial.print(radar_angle);
-      Serial.print(" deg and distance = ");
-      Serial.print("OUT OF RANGE");
-      Serial.println();
+      //Serial.print("[RADAR] Angle: %d, Distance: OUT OF RANGE \n", radar_angle);
+      delay(200);
     }
-    delay(200);
   }
   
   radarPrintDistances();
@@ -665,12 +905,13 @@ bool obstacleDetection(){
  * Prints the current set of distances from 0-180*.
  */
 void radarPrintDistances(){
-  Serial.print("\n");
+  String msg = "[RADAR] ";
   for(int i = 0; i <= 18; i++){
-    Serial.print(radarDistances[i]);
-    Serial.print("\t");
+    msg += radarDistances[i];
+    msg += " ";
   }
-  Serial.print("\n");
+  msg += "\n";
+  Serial.print(msg);
   return;
 }
 
@@ -819,14 +1060,14 @@ double getHeading(){
     IMU.readMagData(IMU.magCount);  // Read the x/y/z adc values
     IMU.getMres();
 
-    IMU.magbias[0] = 100;
-    IMU.magbias[1] = 0;
-    IMU.magbias[2] = 0;
+    IMU.magbias[0] = xmbias();
+    IMU.magbias[1] = ymbias();
     
     IMU.mx = (float)IMU.magCount[0]*IMU.mRes*IMU.magCalibration[0] - IMU.magbias[0];
     IMU.my = (float)IMU.magCount[1]*IMU.mRes*IMU.magCalibration[1] - IMU.magbias[1];
-    IMU.mz = (float)IMU.magCount[2]*IMU.mRes*IMU.magCalibration[2] - IMU.magbias[2];
-  } 
+
+  }
+   
   IMU.updateTime();
 
   MahonyQuaternionUpdate(IMU.ax, IMU.ay, IMU.az, IMU.gx*DEG_TO_RAD,
@@ -839,7 +1080,6 @@ double getHeading(){
     if (IMU.delt_t > 500){
       Serial.print("mx = "); Serial.print( (int)IMU.mx );
       Serial.print(" my = "); Serial.print( (int)IMU.my );
-      Serial.print(" mz = "); Serial.print( (int)IMU.mz );
       Serial.println(" mG");
      
       IMU.count = millis();
@@ -848,21 +1088,111 @@ double getHeading(){
   
       if (IMU.my == 0){
         if (IMU.mx > 0){
-          return 0;
+          lastKnownHeading = 0;
         }
         else{
-          return 180;
+          lastKnownHeading = 180;
         }
       }
       else{
         if (IMU.my > 0){
           lastKnownHeading = (90 - (atan(IMU.mx/IMU.my)*180/pi));
-          return lastKnownHeading;
         }
         else{
           lastKnownHeading = (270 - (atan(IMU.mx/IMU.my)*180/pi));
-          return lastKnownHeading;
         }
+        lastKnownHeading = 360 - lastKnownHeading;
+      }
+      if(lastKnownHeading >= 270){
+        lastKnownHeading = lastKnownHeading - 270;
+      }
+      else{
+        lastKnownHeading = lastKnownHeading + 90;
       }
     }
+
+    return lastKnownHeading;
+}
+
+/**
+ * Returns bias for magnetic X axis.
+ */
+int xmbias (){
+  MagX = (float)IMU.magCount[0]*IMU.mRes*IMU.magCalibration[0];
+
+  if (mxcalmax < MagX){
+    mxcalmax = MagX;
+  }
+  if (mxcalmin > MagX){
+    mxcalmin = MagX;
+  }
+  
+  return (mxcalmax+mxcalmin)/2;
+}
+
+/**
+ * Returns bias for magnetic Y axis.
+ */
+int ymbias (){
+
+  MagY = (float)IMU.magCount[1]*IMU.mRes*IMU.magCalibration[1];
+  
+  if (mycalmax < MagY){
+    mycalmax = MagY;
+  }
+  if (mycalmin > MagY){
+    mycalmin = MagY;
+  }
+
+  return (mycalmax+mycalmin)/2;
+}
+
+double getDistance (){
+
+  if (IMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
+  {  
+    IMU.readAccelData(IMU.accelCount);  // Read the x/y/z adc values
+    IMU.getAres();
+    IMU.ay = (float)IMU.accelCount[1]*IMU.aRes;
+  } 
+
+  double distance;
+  double curacctime = millis(); 
+  double accelTime = (curacctime - prevacctime)/1000;
+  Serial.print("Time: "); Serial.print(millis()/1000); Serial.println ("s");
+
+  IMU.updateTime();
+
+  MahonyQuaternionUpdate(IMU.ax, IMU.ay, IMU.az, IMU.gx*DEG_TO_RAD, IMU.gy*DEG_TO_RAD, IMU.gz*DEG_TO_RAD, IMU.my, IMU.mx, IMU.mz, IMU.deltat);
+
+    // Serial print and/or display at 0.5 s rate independent of data rates
+  IMU.delt_t = millis() - IMU.count;
+
+  if (IMU.delt_t > 500){
+      IMU.count = millis();
+      IMU.sumCount = 0;
+      IMU.sum = 0;
+
+      if (IMU.ay < 0){
+        IMU.ay = -1 * IMU.ay;
+      }
+
+      if (IMU.ay < 0.075){
+        IMU.ay = 0.00;
+      }
+      
+      Serial.print("Y-acceleration: "); Serial.print(IMU.ay);
+      Serial.println(" g ");
+    
+      Serial.print("Distance between "); Serial.print(prevacctime); Serial.print(" - "); Serial.print(curacctime); Serial.print("ms: ");
+      distance = 0.5 * IMU.ay * 9.80665 * accelTime * accelTime;
+      Serial.print(distance); Serial.println("m");
+      
+      Serial.print("Total distance: ");
+      totaldistance = distance + totaldistance;
+      Serial.print(totaldistance); Serial.println("m");
+    
+      prevacctime = curacctime;
+    }
+    return totaldistance;
 }

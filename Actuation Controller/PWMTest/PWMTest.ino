@@ -41,6 +41,8 @@ void loop() {
   
   delay(10);
 
+
+/*
           // Debug receive from serial monitor
         if (Serial.available() > 0) {
                 // read the incoming byte:
@@ -79,10 +81,13 @@ void loop() {
        if (incomingByte == l4){
           if (done == 1){
              Serial.println("PWM: 254");
-             esc.write(254);
+             esc.write(110);
              done = 0;
           }
         }
 
+*/
+
+esc.write(90);
 
 }
