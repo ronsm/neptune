@@ -1,5 +1,4 @@
 <img src="/neptune.png" width="200">
-
 Repository for the Neptune Autonomous Hovercraft project.
 
 ## Built with
@@ -14,7 +13,7 @@ according to the part of the system they are utilized by.
 * [i2c](https://www.npmjs.com/package/i2c) - Node-based interface for I2C on Raspberry Pi
 * [Socket.io](http://socket.io/) - Node-based realtime application framework for client-server communications
 * [Motion](http://lavrsen.dk/foswiki/bin/view/Motion/WebHome) - Live video capture for Linux with motion detection
-* [Leaflet.JS](link) - A JavaScript library for interactive maps
+* [Leaflet.JS](http://leafletjs.com/) - A JavaScript library for interactive maps
 * [Serialport](https://www.npmjs.com/package/serialport) - Node-based serial port access
 
 ## Authors
