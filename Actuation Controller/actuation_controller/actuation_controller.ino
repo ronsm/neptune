@@ -147,9 +147,9 @@ void poweron(){
 
 void forward1u(){
   Serial.println("Move forward 1 unit!");
-  //esc1.write(85);
-  //esc2.write(80);
+  esc1.write(85);
   delay(1000);
+  esc1.write(0);
 }
 
 void poweroff(){

@@ -117,7 +117,7 @@ function errHandler(err){
 // to the bottom-right USB port, you must comment out everything from
 // the next line down to the Socket.io section.
 
-//'use strict';
+'use strict';
 
 //const parsers = SerialPort.parsers;
 
@@ -136,9 +136,84 @@ function errHandler(err){
 
 //port.on("data", function(data){
 	//console.log('' + data);
-	//serialMsg = '' + data + '\n';
-	//io.emit('logWrite', serialMsg);
+	//var sub = data.substring(1,4);
+	//if(sub == "NAV" || sub == "RAD"){
+		//serialMsg = '' + data + '\n';
+		//io.emit('logWrite', serialMsg);
+	//}
+	
+	//var scString = data.substring(0, 4);
+	//var scInt = Number(scString);
+	//if(!isNaN(scInt)){
+		//checkStatusCode(scInt);
+		//console.log(scInt);	
+	//}
 //});
+
+function checkStatusCode(code){
+	var element = 100; // No element, no value
+	var value = 100;
+	
+	if(code == 1000){
+		element = 1;
+		value = 0;
+		io.emit('interfaceRefresh', element, value);
+	}
+	else if(code == 1001){
+		element = 1;
+		value = 1;
+		io.emit('interfaceRefresh', element, value);
+	}
+	else if(code == 2000){
+		element = 2;
+		value = 0;
+		io.emit('interfaceRefresh', element, value);
+	}	
+	else if(code == 20001){
+		element = 2;
+		value = 1;
+		io.emit('interfaceRefresh', element, value);
+	}	
+	else if(code >= 3000 && code <= 3010){
+		element = 3;
+		if(code == 3000) value = 0;
+		if(code == 3001) value = 1;
+		if(code == 3002) value = 2;
+		if(code == 3003) value = 3;
+		if(code == 3004) value = 4;
+		if(code == 3005) value = 5;
+		if(code == 3006) value = 6;
+		if(code == 3007) value = 7;
+		if(code == 3008) value = 8;
+		if(code == 3009) value = 9;
+		io.emit('interfaceRefresh', element, value);
+	}	
+	else if(code >= 3990 && code <= 4010){
+		element = 4;
+		if(code == 4000) value = 0;
+		if(code == 4001) value = 1;
+		if(code == 4002) value = 2;
+		if(code == 4003) value = 3;
+		if(code == 4004) value = 4;
+		if(code == 4005) value = 5;
+		if(code == 4006) value = 6;
+		if(code == 4007) value = 7;
+		if(code == 4008) value = 8;
+		if(code == 4009) value = 9;
+		if(code == 4010) value = 10;
+		io.emit('interfaceRefresh', element, value);
+	}
+	else if(code == 5000){
+		element = 5;
+		value = 0;
+		io.emit('interfaceRefresh', element, value);
+	}
+	else if(code == 5000){
+		element = 5;
+		value = 1;
+		io.emit('interfaceRefresh', element, value);
+	}
+}
 
 // SOCKET.IO
 

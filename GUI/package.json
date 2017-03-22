@@ -22,6 +22,7 @@
     "url": "git://github.com/BlackrockDigital/startbootstrap-sb-admin-2.git"
   },
   "dependencies": {
+    "chart.js": "^2.5.0",
     "config-json": "^1.0.0"
   }
 }

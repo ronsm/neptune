@@ -55,6 +55,7 @@
       <!-- Leaflet -->
       <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
       <script src="vendor/leaflet/leaflet.js"></script>
+      <script src="vendor/chart/Chart.min.js"></script>
    </head>
    <body>
       <script>
@@ -202,6 +203,66 @@
              e.preventDefault();
          });
 		
+		 <!-- HANDLE DATA FROM SERVER -->
+
+		 socket.on('interfaceRefresh', function(elem, val){
+			 var element = Number(elem);
+			 var value = Number(val);
+			 if(element == 1){ // OPERATING MODE
+				if(value == 0){ // MANUAL
+					 $("#MANUAL").prop("disabled", true);
+					 $("#AUTO").prop("disabled", false);
+					 $("#MANUAL").css('background-color', '#1CC6FF');
+					 $("#AUTO").css('background-color', 'grey');
+					 $("#MANUAL_CONTROLS").show();
+				}
+				if(value == 1){ // AUTO
+					 $("#AUTO").prop("disabled", true);
+					 $("#MANUAL").prop("disabled", false);
+					 $("#AUTO").css('background-color', '#1CC6FF');
+					 $("#MANUAL").css('background-color', 'grey');
+					 $("#MANUAL_CONTROLS").hide();
+				}
+			 }
+			 if(element == 2){ // ENVIRONMENT SELECT
+				if(value == 0){ // OUTDOOR
+					 $("#OUTDOOR").prop("disabled", true);
+					 $("#INDOOR").prop("disabled", false);
+					 $("#OUTDOOR").css('background-color', '#1CC6FF');
+					 $("#INDOOR").css('background-color', 'grey');
+					 $("#NAV_OUTDOOR").show();
+					 $("#NAV_INDOOR").hide();
+				}
+				if(value == 1){ // INDOOR
+					 $("#INDOOR").prop("disabled", true);
+					 $("#OUTDOOR").prop("disabled", false);
+					 $("#INDOOR").css('background-color', '#1CC6FF');
+					 $("#OUTDOOR").css('background-color', 'grey');
+					 $("#NAV_INDOOR").show();
+					 $("#NAV_OUTDOOR").hide();
+				}
+			 }
+			 if(element == 3){ // SPEED
+				$('#SPEED_POS').val(value);
+			 }
+			 if(element == 4){ // RUDDER
+				$('#RUDDER_POS').val(value);
+			 }
+			 if(element == 5){ // POWER
+				if(value == 0){ // OFF
+					 $("#OFF").prop("disabled", true);
+					 $("#ON").prop("disabled", false);
+					 $("#OFF").css('background-color', '#1CC6FF');
+					 $("#ON").css('background-color', 'grey');
+				}
+				if(value == 1){ // ON
+					 $("#ON").prop("disabled", true);
+					 $("#OFF").prop("disabled", false);
+					 $("#ON").css('background-color', '#1CC6FF');
+					 $("#OFF").css('background-color', 'grey');
+				}
+		     }
+		 });
 
          socket.on('logWrite', function(logReceive){
              var today = new Date();
@@ -211,6 +272,7 @@
 
              $('#LOG').append(logTimeStamp);
              $('#LOG').append(logReceive);
+             var textarea = document.getElementById('LOG');
              var textarea = document.getElementById('LOG');
              textarea.scrollTop = textarea.scrollHeight;
          });
@@ -246,7 +308,7 @@
          });
          
 		 <!-- MAP - INDOOR -->
-		 $(document).off('click', '#SSUBMIT_INDOOR_START').on('click', '#SUBMIT_INDOOR_START', function (e) {
+		 $(document).off('click', '#SUBMIT_INDOOR_START').on('click', '#SUBMIT_INDOOR_START', function (e) {
 		   var coordLat = $("#POS_BOX_LAT").val();
 		   var coordLng = $("#POS_BOX_LNG").val();
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
@@ -259,7 +321,7 @@
 		   e.preventDefault();
 		 });
 
-		 $(document).off('click', '#SSUBMIT_INDOOR_DEST').on('click', '#SUBMIT_INDOOR_DEST', function (e) {
+		 $(document).off('click', '#SUBMIT_INDOOR_DEST').on('click', '#SUBMIT_INDOOR_DEST', function (e) {
 		   var coordLat = $("#POS_BOX_LAT").val();
 		   var coordLng = $("#POS_BOX_LNG").val();
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
@@ -270,6 +332,10 @@
 		   
 		   socket.emit('submitIndoorDest', coordString);
 		   e.preventDefault();
+		 });
+		 
+		 $(document).off('change', '#INDOOR_MAP_SELECT').on('change', '#INDOOR_MAP_SELECT', function (e) {
+			 indoorMapLoad();
 		 });
 
 		 <!-- CAMERA -->
@@ -402,6 +468,45 @@
                        </div>
                      </div>
                   </div>
+				  <div class="panel panel-default" id="RADAR">
+                     <div class="panel-heading">
+                        <b>Radar</b>
+                     </div>
+                     <div class="panel-body">
+                       
+                     <canvas id="radarChart" width="100" height="100"></canvas>  
+                     <script>
+						var canvas = document.getElementById('radarChart'),
+							ctx = canvas.getContext('2d'),
+							startingData = {
+							  labels: [90, 100, 110, 120, 130, 140, 150, 160, 170, "X", "X", "X", "X", "X", "X",
+										"X", "X", "X", "X", "X", "X", "X", "X", "X", "X", "X", "X", 10, 20, 30, 40,
+										50, 60, 70, 80],
+							  datasets: [
+								  {
+									  label:"CLEAR",
+									  fillColor: "rgba(0,220,220,0.2)",
+									  strokeColor: "rgba(0,220,220,1)",
+									  pointColor: "rgba(220,220,220,1)",
+									  pointStrokeColor: "#333",
+									  data: [40, 40, 50, 70, 50, 40, 150, 150, 170, 0, 0, 0, 0, 0, 0,
+										0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 80, 80, 90, 60,
+										40, 110, 150, 150]
+								  }
+							  ]
+							};
+
+						var myLiveChart = new Chart(ctx, {type:"radar", data:startingData, animationSteps:15,});
+
+						setInterval(function(){
+						  var indexToUpdate = Math.round(Math.random() * startingData.labels.length);
+						  myLiveChart.datasets[1].points[indexToUpdate].value = Math.random() * 100;
+						  myLiveChart.update();
+						}, 5000);
+                     </script>
+                       
+                     </div>
+                  </div>
                </div>
                <div class="col-lg-6">
                   <!-- /.panel -->
@@ -442,44 +547,59 @@
                         <b>Navigation (Indoor)</b>
                      </div>
                      <div class="panel-body">
+						<select style="width:100%;" id="INDOOR_MAP_SELECT">
+							<option value="NONE">Select a floor...</option>
+							<option value="EMG">Earl Mountbatten - Floor G</option>
+							<option value="EM1">Earl Mountbatten - Floor 1</option>
+							<option value="EM2">Earl Mountbatten - Floor 2</option>
+							<option value="EM3">Earl Mountbatten - Floor 3</option>
+						</select>
 						<div id="mapid"></div>
 						<script>
-							var indoorMap = L.map('mapid', {
-							  crs: L.CRS.Simple,
-							  minZoom: 0,
-							  maxZoom: 0
-							});
+							function indoorMapLoad(){
+								var indoorMap = L.map('mapid', {
+								  crs: L.CRS.Simple,
+								  minZoom: 0,
+								  maxZoom: 0
+								});
 
-							var bounds = [[0,0], [478,790]];
-							var image = L.imageOverlay('tiles/em_3.png', bounds).addTo(indoorMap);
+								<!-- 478, 790 -->
+								var bounds = [[0,0], [524,523]];
+								var ms = $('#INDOOR_MAP_SELECT').val();
+								if(ms == "EMG") var image = L.imageOverlay('tiles/em_3.png', bounds).addTo(indoorMap);
+								if(ms == "EMG") var image = L.imageOverlay('tiles/new/em_0.png', bounds).addTo(indoorMap);
+								if(ms == "EM1") var image = L.imageOverlay('tiles/new/em_1.png', bounds).addTo(indoorMap);
+								if(ms == "EM2") var image = L.imageOverlay('tiles/new/em_2.png', bounds).addTo(indoorMap);
+								if(ms == "EM3") var image = L.imageOverlay('tiles/new/em_3.png', bounds).addTo(indoorMap);
 
-							indoorMap.fitBounds(bounds);
-							indoorMap.setMaxBounds(bounds);
+								indoorMap.fitBounds(bounds);
+								indoorMap.setMaxBounds(bounds);
 
-							<!-- indoorMap.dragging.disable(); -->
+								<!-- indoorMap.dragging.disable(); -->
 
-							var marker = L.marker(new L.LatLng(210, 683), {
-							draggable: true
-							}).addTo(indoorMap);
+								var marker = L.marker(new L.LatLng(262, 262), {
+								draggable: true
+								}).addTo(indoorMap);
 
-							marker.on('dragend', function(event) {
-							  var marker = event.target;
-							  var result = marker.getLatLng();
-							  
-							  var markerLat = result.lat;
-							  var markerLng = result.lng;
-							  
-							  document.getElementById('POS_BOX_LAT').value = markerLat;
-							  document.getElementById('POS_BOX_LNG').value = markerLng;
-							  
-							  console.log(markerLat);
-							  console.log(markerLng);
-							  console.log(result);
-							});
-							
-							indoorMap.on('drag', function() {
-								indoorMap.panInsideBounds(bounds, {animate: false});
-							});
+								marker.on('dragend', function(event) {
+								  var marker = event.target;
+								  var result = marker.getLatLng();
+								  
+								  var markerLat = result.lat;
+								  var markerLng = result.lng;
+								  
+								  document.getElementById('POS_BOX_LAT').value = markerLat;
+								  document.getElementById('POS_BOX_LNG').value = markerLng;
+								  
+								  console.log(markerLat);
+								  console.log(markerLng);
+								  console.log(result);
+								});
+								
+								indoorMap.on('drag', function() {
+									indoorMap.panInsideBounds(bounds, {animate: false});
+								});
+							}
 						</script>
 						<input style="width:29%;" id="POS_BOX_LAT" placeholder="Latitude..."></input>
 						<input style="width:29%;" id="POS_BOX_LNG" placeholder="Longitude..."></input>
