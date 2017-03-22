@@ -52,6 +52,7 @@
 // Master settings
 bool environmentMode;
 bool controlMode;
+bool demoMode;
 
 // Manual mode
 int rudderPos;
@@ -177,6 +178,7 @@ void setup() {
   // Safety
   environmentMode = false;
   controlMode = false;
+  demoMode = false;
   rudderPos = 6;
   speedSel = 0;
   Serial.print("SAFETY: OK \n");
@@ -224,11 +226,15 @@ void loop() {
     checkForResponse();
   }
   else {
-    if (environmentMode == false && controlMode == true) {
+    if(demoMode == true){
+      demoModeController();
+    }
+    else if (environmentMode == false && controlMode == true) {
       outdoorAutoController();
     }
     else if (environmentMode == true && controlMode == true) {
-      indoorAutoController();
+      //indoorAutoController();
+      demoModeController();
     }
     else {
       manualModeController();
@@ -253,6 +259,55 @@ void loop() {
   //delay(2000);
 
   //Serial.print("[NAV-CON] This is a test of Serial communication \n");
+}
+
+/* Functions to operate the demonstration mode */
+
+/**
+ * Runs the demonstration mode for the hovercraft.
+ */
+void demoModeController(){
+  Serial.println("DEMO MODE");
+
+  bool res = obstacleDetection();
+  
+  if (obstacleDirection[0] == true && obstacleDirection[1] == false && obstacleDirection[2] == false) {
+    softStop();
+    radarScan();
+    turnByDegrees(true, 30);
+    sudoMoveForward();
+  }
+  else if (obstacleDirection[0] == false && obstacleDirection[1] == false && obstacleDirection[2] == true) {
+    softStop();
+    radarScan();
+    turnByDegrees(false, 30);
+    sudoMoveForward();
+  }
+  else if (obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == false) {
+    softStop();
+    radarScan();
+    turnByDegrees(true, 90);
+    sudoMoveForward();
+  }
+  else if (obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == false) {
+    softStop();
+    radarScan();
+    turnByDegrees(true, 45);
+    sudoMoveForward();
+  }
+  else if (obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == true) {
+    softStop();
+    radarScan();
+    turnByDegrees(false, 45);
+    sudoMoveForward();
+  }
+  else if(obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == true){
+    radarScan();
+    softStop(); // Should realistically be emergency stop, but then it would not function indoors at all
+  }
+  else {
+    sudoMoveForward();
+  }
 }
 
 /* Server communication handlers */
@@ -303,6 +358,12 @@ void receiveEvent(int byteCount) {
       }
       if (number == 100) {
         Serial.print("ACK: FORWARD 1U \n");
+        if(demoMode == false){
+          demoMode == true;
+        }
+        else{
+          demoMode == false;
+        }
       }
       if (number >= 101 && number <= 111) {
         Serial.print("ACK: RUDDER POS:");
@@ -522,6 +583,7 @@ void emergencyStop() {
  * Shuts down the rear propellor to slow down.
  */
 void softStop() {
+  Serial.println("softStop()");
   commandQueue.enqueue(120);
 }
 
@@ -560,6 +622,17 @@ void manualModeController() {
  * direction and number of degrees.
  */
 void turnByDegrees(bool direction, int numDegrees) {
+  if(direction == false){
+    Serial.print("Turning LEFT by ");
+    Serial.print(numDegrees);
+    Serial.print(" degrees \n");
+  }
+  else{
+    Serial.print("Turning RIGHT by ");
+    Serial.print(numDegrees);
+    Serial.print(" degrees \n");
+  }
+  
   byte buffer[2];
   
   Wire.beginTransmission(3);
@@ -604,7 +677,6 @@ void sudoMoveForward() {
   Serial.println("sudoMoveForward()");
   Wire.beginTransmission(3);
   Wire.write(100);
-  delay(200);
   Wire.endTransmission();
 }
 
@@ -697,9 +769,11 @@ bool navigateObstacle() {
  */
 void navigateObstacleStep() {
   if (obstacleDirection[0] == true && obstacleDirection[1] == false && obstacleDirection[2] == false) {
+    turnByDegrees(true, 30);
     sudoMoveForward();
   }
   else if (obstacleDirection[0] == false && obstacleDirection[1] == false && obstacleDirection[2] == true) {
+    turnByDegrees(false, 30);
     sudoMoveForward();
   }
   else if (obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == false) {
@@ -864,15 +938,15 @@ bool obstacleDetection() {
   Serial.print(", Right: ");
   Serial.println(distance3);
 
-  if (distance1 < 10) {
+  if (distance1 < 100) {
     obstacleDirection[0] = true;
     res = true;
   }
-  if (distance2 < 10) {
+  if (distance2 < 100) {
     obstacleDirection[1] = true;
     res = true;
   }
-  if (distance3 < 10) {
+  if (distance3 < 100) {
     obstacleDirection[2] = true;
     res = true;
   }
@@ -890,6 +964,8 @@ bool obstacleDetection() {
  * Completes one complete 180* radar scan and saves the distances to an array.
  */
 void radarScan() {
+  Serial.println("radarScan()");
+  
   long duration;
   long distance;
 

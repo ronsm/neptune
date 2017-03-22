@@ -26,13 +26,17 @@
 int incomingByte = 0;        //For incoming serial data
 
 bool taskComplete = true;
-int lastcommand = 0;
+bool forward = false;
 
 int analoglevel = 0;
 int batterylevel = 0;
 int cellPin = A3;
 
 int middlePosition = 105;    //Calibrate to servo middle position
+
+int x;      //Used for storing bytes when 1 byte received
+
+int t1, t2; //Used for sotrying bytes when 2 bytes received
 
 Servo esc1;
 Servo esc2;
@@ -63,6 +67,29 @@ void loop() {
   analoglevel = analogRead(cellPin);
   batterylevel = map(analoglevel, 740, 860, 231, 241);      //Maps battery value between 0 and 255
 
+
+    //Turn left N degrees
+    if(t1 == 201){
+      taskComplete = false;
+      Serial.print("Calling turn function with degrees: "); 
+      Serial.println(t2); 
+      turnleft(t2);
+    }
+    //Turn right N degrees
+    else if(t1 == 202){
+      taskComplete = false;
+      Serial.print("Calling turn function with degrees: "); 
+      Serial.println(t2); 
+      turnright(t2);
+    }
+    t1 = 0; t2 = 0;
+
+    if (forward == true){
+        forward1u();
+        forward = false;
+    }
+  
+
   //Serial.print("Battery voltage is: ");
   //Serial.println(analoglevel);
 
@@ -77,47 +104,52 @@ void loop() {
    * 11%  ------ 3.70V ---- 757
    * 0%   ------ 3.62V ---- 740
    */
-        // Debug receive from serial monitor
-        if (Serial.available() > 0) {
-                incomingByte = Serial.read();
-                Serial.print("I received: ");
-                Serial.println(incomingByte);
-        }
+
 }
 
 void turnleft(int Ndegrees){
-  Serial.print("Turning left:");
+  Serial.print("Turning left: ");
   Serial.print(Ndegrees);
   Serial.println("degrees.");
 
   //Procedure for interrupt
-  int angle = middlePosition+Ndegrees;  //Work out angle required
-  servo1.write(angle);                  //Point rudder left the required ammount
-  esc1.write(900);                      //Add some more throttle
-  delay(500);                           //Wait half a second
+  int delayamount = map (Ndegrees, 0, 180, 600, 2600); //Maps 0 to 180 to 0 to 2 seconds
+  servo1.write(145);                    //Point rudder left the required ammount
+  esc1.write(90);                       //Add some more throttle
+  delay(delayamount);                   //Wait time to move required degrees
   servo1.write(middlePosition);         //Return rudder back to middle
   esc1.write(20);                       //Stop thrust prop
   taskComplete = true;                  //Finish control interrupt
+  Serial.println ("Procedure complete");
 }
 
 void turnright(int Ndegrees){
-  Serial.print("Turning right:");
+  Serial.print("Turning right: ");
   Serial.print(Ndegrees);
   Serial.println("degrees.");
 
   //Procedure for interrupt
-  int angle = middlePosition-Ndegrees;  //Work out angle required
-  servo1.write(angle);                  //Point rudder left the required ammount
+  int delayamount = map (Ndegrees, 0, 180, 600, 2600); //Maps 0 to 180 to 0 to 2 seconds
+  servo1.write(65);                     //Point rudder left the required ammount
   esc1.write(90);                       //Add some more throttle
-  delay(500);                           //Wait half a second
+  delay(delayamount);                   //Wait time to move required degrees
   servo1.write(middlePosition);         //Return rudder back to middle
   esc1.write(20);                       //Stop thrust prop
   taskComplete = true;                  //Finish control interrupt
+
+  Serial.println ("Procedure complete");
 }
 
 void poweron(){
    Serial.println("Power ON");
-   esc2.write(80);
+   esc2.write(70);
+}
+
+void forward1u(){
+  Serial.println("Move forward 1 unit!");
+  //esc1.write(85);
+  //esc2.write(80);
+  delay(1000);
 }
 
 void poweroff(){
@@ -134,12 +166,12 @@ void manualmotor (int level){
  if (level == 121){esc1.write(40);}
  if (level == 122){esc1.write(60);}
  if (level == 123){esc1.write(80);}
- if (level == 124){esc1.write(90);}
- if (level == 125){esc1.write(100);}
- if (level == 126){esc1.write(120);}
- if (level == 127){esc1.write(140);}
- if (level == 128){esc1.write(160);}
- if (level == 129){esc1.write(180);}  
+ //if (level == 124){esc1.write(90);}
+ //if (level == 125){esc1.write(100);}
+ //if (level == 126){esc1.write(120);}
+ //if (level == 127){esc1.write(140);}
+ //if (level == 128){esc1.write(160);}
+ //if (level == 129){esc1.write(180);}  
 }
 
 void manualservo (int level){
@@ -159,41 +191,54 @@ void manualservo (int level){
 }
 
 void receiveEvent(int howMany){
-  while (1 < Wire.available())           // loop through all but the last
-  {
-    char c = Wire.read();                // receive byte as a character
-    Serial.print(c);                     // print the character
+
+  if(howMany == 1){
+   
+    Serial.print("Single byte data received: ");
+    x = Wire.read();           // receive byte as an integer
+    Serial.println(x);         // print the integer
+   
+      if (x == 0){Serial.println("Doing nothing!");}
+      if (x == 1){poweron();}
+      if (x == 2){poweroff();} 
+      if (x == 100){forward = true;}      
+      if (x > 100 && x < 112){manualservo(x);}   
+      if (x > 119 && x < 130){manualmotor(x);}
+      if (x == 200){esc1.write(70); servo1.write(middlePosition);}    //Move forward at steady state
+    }
+     
+  else if(howMany == 2){
+    Serial.println("----Multi-byte data received----");    
+    t1 = Wire.read();
+    Serial.print("Byte 1: "); 
+    Serial.println(t1);
+    Serial.print("Byte 2: ");
+    t2 = Wire.read();
+    Serial.println(t2);
+    Serial.println("--------------------------------");
   }
-  int x = Wire.read();                   // receive byte as an integer
-  Serial.println(x);                     // print the integer
-  
-  if (x == 1){poweron();}
-  if (x == 2){poweroff();}       
-  if (x > 100 && x < 112){manualservo(x);}   
-  if (x > 119 && x < 130){manualmotor(x);}
-  if (x == 200){esc1.write(70); servo1.write(middlePosition);}    //Move forward at steady state
-  if (lastcommand == 201){turnleft(x);taskComplete = false;}      //Turn left N degrees
-  if (lastcommand == 202){turnright(x);taskComplete = false;}     //Turn right N degrees
-  
-  lastcommand = x;
+  else{
+    Serial.println("Error! Commands must be 1 or 2 bytes.");
+  }
 }
 
 void requestEvent(){
-  
-  switch(lastcommand){
-    case 230:
-      Wire.write(batterylevel);
-      break;
-    case 249:
       if(taskComplete == false){
-        Wire.write(259);
+        Wire.write(251);
+        Serial.println ("Sent back 251");
+        return;
       }
       if(taskComplete == true){
         Wire.write(250); 
+        Serial.println ("Sent back 250");
+        return;
       }
-      break;
-    default:
-      Wire.write(244);
-      break;
+
+  /*
+  switch(lastcommand){
+    case 230:
+      Wire.write(batterylevel);
+      break;     
   }
+  */
 }

@@ -8,13 +8,14 @@ according to the part of the system they are utilized by.
 
 ### Packages used
 * [Raspbian](https://www.raspbian.org) - Operating system
-* [Node.JS](https://nodejs.org/en/) - Runtime environment
+* [Node.js](https://nodejs.org/en/) - Runtime environment
 * [SB Admin 2](https://startbootstrap.com/template-overviews/sb-admin-2/) - Bootstrap framework for GUI
 * [i2c](https://www.npmjs.com/package/i2c) - Node-based interface for I2C on Raspberry Pi
 * [Socket.io](http://socket.io/) - Node-based realtime application framework for client-server communications
 * [Motion](http://lavrsen.dk/foswiki/bin/view/Motion/WebHome) - Live video capture for Linux with motion detection
-* [Leaflet.JS](http://leafletjs.com/) - A JavaScript library for interactive maps
+* [Leaflet.js](http://leafletjs.com/) - A JavaScript library for interactive maps
 * [Serialport](https://www.npmjs.com/package/serialport) - Node-based serial port access
+* [Chart.js](http://www.chartjs.org/) - A JavaScript library for interactive charting and plotting
 
 ## Authors
 
