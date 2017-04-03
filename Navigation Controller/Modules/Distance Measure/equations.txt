@@ -1,0 +1,6 @@
+Vf = Vi + at 
+Vf^2 = Vi^2 + 2as 
+s = (Vi+Vf)/2*t 
+s = Vit + 1/2*a*t^2
+
+Reference https://www.physicsforums.com/threads/finding-speed-from-acceleration.248976/

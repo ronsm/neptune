@@ -121,12 +121,12 @@ double getHeading(){
       Heading = 360 - Heading;
     }
   }
-  if (Heading >= 270){
-    Heading = Heading - 270;
+  if (Heading >= 180){
+    Heading = Heading - 180;
     return Heading;
   }
   else{
-    Heading = Heading + 90;
+    Heading = Heading + 180;
     return Heading;
   }
 } 

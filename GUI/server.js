@@ -119,36 +119,40 @@ function errHandler(err){
 
 'use strict';
 
-//const parsers = SerialPort.parsers;
+const parsers = SerialPort.parsers;
 
-//const parser = new parsers.readline({
-	//delimiter: '\r\n'
-//});
+const parser = new parsers.readline({
+	delimiter: '\r\n'
+});
 
-//var port = new SerialPort("/dev/ttyACM0", {
-	//baudRate: 57600,
-	//parser: SerialPort.parsers.readline('\n')
-//});
+var port = new SerialPort("/dev/ttyACM0", {
+	baudRate: 57600,
+	parser: SerialPort.parsers.readline('\n')
+});
 
-//port.on("open", function(){
-	//console.log('Opened serial port @ 57600 baud');
-//});
+port.on("open", function(){
+	console.log('Opened serial port @ 57600 baud');
+});
 
-//port.on("data", function(data){
-	//console.log('' + data);
-	//var sub = data.substring(1,4);
-	//if(sub == "NAV" || sub == "RAD"){
-		//serialMsg = '' + data + '\n';
-		//io.emit('logWrite', serialMsg);
-	//}
+port.on("data", function(data){
+	console.log('' + data);
+	var sub = data.substring(1,4);
+	if(sub == "NAV"){
+		serialMsg = '' + data + '\n';
+		io.emit('logWrite', serialMsg);
+	}
+	if(sub == "RAD"){
+		serialMsg = '' + data + '\n';
+		io.emit('setRadarData', serialMsg);
+	}
 	
-	//var scString = data.substring(0, 4);
-	//var scInt = Number(scString);
-	//if(!isNaN(scInt)){
-		//checkStatusCode(scInt);
-		//console.log(scInt);	
-	//}
-//});
+	var scString = data.substring(0, 4);
+	var scInt = Number(scString);
+	if(!isNaN(scInt)){
+		checkStatusCode(scInt);
+		console.log(scInt);	
+	}
+});
 
 function checkStatusCode(code){
 	var element = 100; // No element, no value

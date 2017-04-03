@@ -1,6 +1,8 @@
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 #include <mpu9250.h>
+#include <SPI.h>
+#include <Wire.h>
 
 int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 int myLed  = 13;  // Set up pin 13 led for toggling

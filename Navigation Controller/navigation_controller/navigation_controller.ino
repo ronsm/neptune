@@ -45,7 +45,7 @@
 #include <QueueArray.h>
 
 /* Definitions */
-#define GPSECHO true
+#define GPSECHO false
 
 /* Variables */
 
@@ -133,6 +133,7 @@ int MagX;
 int MagY;
 double prevacctime = 0;
 double totaldistance;
+double accelvelocity = 0;
 
 /* Core system functions */
 
@@ -168,12 +169,14 @@ void setup() {
   pinMode(distRightEcho, INPUT);
 
   // GPS
-//  GPS.begin(9600);
-//  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-//  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
-//  GPS.sendCommand(PGCMD_ANTENNA);
-//  useInterrupt(true);
-//  Serial.print("GPS: OK \n");
+  GPS.begin(9600);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+  GPS.sendCommand(PGCMD_ANTENNA);
+  useInterrupt(true);
+  delay(1000);
+  mySerial.println(PMTK_Q_RELEASE);
+  Serial.print("GPS: OK \n");
 
   // Safety
   environmentMode = false;
@@ -220,6 +223,13 @@ void setup() {
 void loop() {
   delay(1000);
 
+  // GPS
+  gpsLoop();
+  
+  getDistance();
+
+  Serial.println(getHeading());
+
   statusUpdate();
 
   if (awaitingResponse == true && controlMode == true) {
@@ -234,31 +244,15 @@ void loop() {
     }
     else if (environmentMode == true && controlMode == true) {
       //indoorAutoController();
-      demoModeController();
+      demoModeController2();
     }
-    else {
+    else if(environmentMode == false && controlMode == false){
+      manualModeController();
+    }
+    else{
       manualModeController();
     }
   }
-
-  // Radar
-  //  long rangeDuration;
-  //  long rangeDistance;
-  //  int averageDistance = 0;
-  //  radarScan();
-
-  // Distance sensors
-  //obstacleDetection();
-
-  // GPS
-  //gpsLoop();
-
-  //IMU
-  //Serial.println(getHeading());
-
-  //delay(2000);
-
-  //Serial.print("[NAV-CON] This is a test of Serial communication \n");
 }
 
 /* Functions to operate the demonstration mode */
@@ -304,6 +298,20 @@ void demoModeController(){
   else if(obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == true){
     radarScan();
     softStop(); // Should realistically be emergency stop, but then it would not function indoors at all
+  }
+  else {
+    sudoMoveForward();
+  }
+}
+
+void demoModeController2(){
+  Serial.println("DEMO MODE");
+
+  bool res = obstacleDetection();
+  
+  if (obstacleDirection[0] == true || obstacleDirection[1] == true || obstacleDirection[2] == true) {
+    softStop();
+    navigateObstacle();
   }
   else {
     sudoMoveForward();
@@ -661,7 +669,10 @@ void moveForward() {
   if (obstacleDetection()) {
     Serial.println("moveForward(): obstacle detected");
     //radarScan();
-    //bool res = navigateObstacle();
+    bool res = navigateObstacle();
+    if(!res){
+      Serial.print("[NAV-CON] Unable to circumnavigate obstacle, please manually move the vehicle! \n");
+    }
   }
   else {
     Wire.beginTransmission(3);
@@ -691,18 +702,28 @@ void outdoorAutoController() {
     return;
   }
 
+  double destinationHeading, currentHeading;
+  coord currentPosition, destinationPosition;
+  
+  Serial.println(getLatitude());
+  Serial.println(getLongitude());
+
+  currentPosition = getCurrentPosition();
+
   if (lastCoordLat == 0.0 && lastCoordLon == 0.0) {
     Serial.print("[NAV-CON] Please provide a destination coordinate... \n");
   }
+  else if(GPS.fix == 0){
+    Serial.print("Waiting for a GPS fix... \n");
+    delay(1000);
+  }
   else {
-    double destinationHeading, currentHeading;
-    coord currentPosition, destinationPosition;
-
     currentPosition = getCurrentPosition();
-    destinationPosition.lat = lastCoordLat;
-    destinationPosition.lon = lastCoordLon;
 
-    currentHeading = getHeading();
+    destinationPosition = getDestinationPosition();
+
+    //currentHeading = getHeading();
+    currentHeading = 150.0;
     destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
 
     calcMoveToHeading(destinationHeading, currentHeading);
@@ -717,11 +738,11 @@ void outdoorAutoController() {
 coord getCurrentPosition() {
   coord currentPosition;
 
-  currentPosition.lat = 56.191834;
-  currentPosition.lon = -3.145690;
+  //currentPosition.lat = 56.191834;
+  //currentPosition.lon = -3.145690;
 
-  //currentPosition.lat = getLatitude();
-  //currentPosition.lon = getLongitude();
+  currentPosition.lat = getLatitude();
+  currentPosition.lon = getLongitude();
 
   return currentPosition;
 }
@@ -732,8 +753,11 @@ coord getCurrentPosition() {
 coord getDestinationPosition() {
   coord destinationPosition;
 
-  destinationPosition.lat = 56.160074;
-  destinationPosition.lon = -3.072013;
+  //destinationPosition.lat = 56.160074;
+  //destinationPosition.lon = -3.072013;
+
+  destinationPosition.lat = lastCoordLat;
+  destinationPosition.lon = lastCoordLon;
 
   return destinationPosition;
 }
@@ -755,41 +779,102 @@ double getCurrentHeading() {
 bool navigateObstacle() {
   Serial.println("navigateObstacle()");
   bool res;
+  long duration;
+  bool turnDirection;
+  bool correctionRequired = false;
 
-  while (obstacleDetection()) {
-    navigateObstacleStep();
-  }
+  int correctionDegrees = 0;
 
-  res = true;
-  return res;
-}
-
-/**
- * Carries out one step of the obstacle avoidance procedure.
- */
-void navigateObstacleStep() {
+  obstacleDetection();
   if (obstacleDirection[0] == true && obstacleDirection[1] == false && obstacleDirection[2] == false) {
     turnByDegrees(true, 30);
+    correctionDegrees = 30;
     sudoMoveForward();
+
+    radarServo.write(180);
+    turnDirection = false;
+    correctionRequired = true;
   }
   else if (obstacleDirection[0] == false && obstacleDirection[1] == false && obstacleDirection[2] == true) {
     turnByDegrees(false, 30);
+    correctionDegrees = 30;
     sudoMoveForward();
+
+    radarServo.write(10);
+    turnDirection = true;
+    correctionRequired = true;
   }
   else if (obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == false) {
     turnByDegrees(true, 90);
+    correctionDegrees = 90;
+
+    radarServo.write(180);
+    turnDirection = false;
+    correctionRequired = true;
   }
   else if (obstacleDirection[0] == true && obstacleDirection[1] == true && obstacleDirection[2] == false) {
     turnByDegrees(true, 45);
+    correctionDegrees = 45;
     sudoMoveForward();
+
+    radarServo.write(180);
+    turnDirection = false;
+    correctionRequired = true;
   }
   else if (obstacleDirection[0] == false && obstacleDirection[1] == true && obstacleDirection[2] == true) {
     turnByDegrees(false, 45);
+    correctionDegrees = 45;
     sudoMoveForward();
+
+    radarServo.write(10);
+    turnDirection = true;
+    correctionRequired = true;
   }
   else {
-    // DO SOMETHING
+    Serial.println("CANNOT NAVIGATE THIS OBSTACLE!");
+    res = false;
+    return res;
   }
+
+  long d1, d2, d3;
+  long dAvg;
+
+  d1 = 0; d2 = 0; d3 = 0;
+  dAvg = 0;
+  
+  while(dAvg < 60){
+    digitalWrite(radarTrigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(radarTrigPin, HIGH);
+    delayMicroseconds(10); // 10us
+    digitalWrite(radarTrigPin, LOW);
+    duration = pulseIn(radarEchoPin, HIGH);
+
+    d3 = d2;
+    d2 = d1;
+    d1 = microsecondsToCentimeters(duration);
+
+    dAvg = (d1 + d2 + d3) / 3;
+
+    sudoMoveForward();
+    
+    Serial.print("Radar distance: ");
+    Serial.println(dAvg);
+  }
+  if(correctionRequired == true){
+    if(turnDirection == false){ // TURNED LEFT
+      turnByDegrees(false, correctionDegrees);
+      sudoMoveForward();
+      res = true;
+    }
+    if(turnDirection == true){ // TURNED RIGHT
+      turnByDegrees(true, correctionDegrees);
+      sudoMoveForward();
+      res = true;
+    }
+  }
+  
+  return res;
 }
 
 /**
@@ -1001,6 +1086,13 @@ void radarScan() {
     }
   }
 
+  Serial.print("[RADAR] ");
+  for(int i = 0; i < 18; i++){
+    Serial.print(radarDistances[i]);
+    Serial.print(", ");
+  }
+  Serial.print("\n");
+
   radarPrintDistances();
 
   radarCalcDirection();
@@ -1099,12 +1191,19 @@ void useInterrupt(boolean v) {
  * Polls the interrupt status to see if new data is available, and prints it.
  */
 void gpsLoop() {
-  if (! usingInterrupt) {
+
+//  if(usingInterrupt){
+//    delay(1000);
+//    useInterrupt(false);
+//  }
+
+  Serial.println();
+  Serial.println("* * * * * BEGIN GPS LOOP * * * * *");
+  
+  if (!usingInterrupt) {
     char c = GPS.read();
     if (GPSECHO)
-      if (c) {
-        //Serial.print(c);
-      }
+      if (c) Serial.print(c);
   }
 
   if (GPS.newNMEAreceived()) {
@@ -1113,16 +1212,39 @@ void gpsLoop() {
   }
 
   if (timer > millis())  timer = millis();
-
-  if (millis() - timer > 2000) {
+  
+  if (millis() - timer > 2000) { 
     timer = millis(); // reset the timer
-    Serial.println("Location: ");
-    Serial.println("");
-    Serial.println(getLatitude (), 4);
-    Serial.println(getLongitude (), 4);
-    Serial.println(getAngle (), 4);
-    Serial.println("");
+    
+    Serial.print("\nTime: ");
+    Serial.print(GPS.hour, DEC); Serial.print(':');
+    Serial.print(GPS.minute, DEC); Serial.print(':');
+    Serial.print(GPS.seconds, DEC); Serial.print('.');
+    Serial.println(GPS.milliseconds);
+    Serial.print("Date: ");
+    Serial.print(GPS.day, DEC); Serial.print('/');
+    Serial.print(GPS.month, DEC); Serial.print("/20");
+    Serial.println(GPS.year, DEC);
+    Serial.print("Fix: "); Serial.print((int)GPS.fix);
+    Serial.print(" quality: "); Serial.println((int)GPS.fixquality); 
+    if (GPS.fix) {
+      Serial.print("Location: ");
+      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
+      Serial.print(", "); 
+      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
+      Serial.print("Location (in degrees, works with Google Maps): ");
+      Serial.print(GPS.latitudeDegrees, 4);
+      Serial.print(", "); 
+      Serial.println(GPS.longitudeDegrees, 4);
+      
+      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
+      Serial.print("Angle: "); Serial.println(GPS.angle);
+      Serial.print("Altitude: "); Serial.println(GPS.altitude);
+      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
+    }
   }
+
+  Serial.println("* * * * * END GPS LOOP * * * * *");
 }
 
 /**
@@ -1182,7 +1304,7 @@ double getHeading() {
   // Serial print and/or display at 0.5 s rate independent of data rates
   IMU.delt_t = millis() - IMU.count;
 
-  if (IMU.delt_t > 500) {
+  //if (IMU.delt_t > 500) {
     Serial.print("mx = "); Serial.print( (int)IMU.mx );
     Serial.print(" my = "); Serial.print( (int)IMU.my );
     Serial.println(" mG");
@@ -1208,13 +1330,13 @@ double getHeading() {
       }
       lastKnownHeading = 360 - lastKnownHeading;
     }
-    if (lastKnownHeading >= 270) {
-      lastKnownHeading = lastKnownHeading - 270;
+    if (lastKnownHeading >= 180) {
+      lastKnownHeading = lastKnownHeading - 180;
     }
     else {
-      lastKnownHeading = lastKnownHeading + 90;
+      lastKnownHeading = lastKnownHeading + 180;
     }
-  }
+  //}
 
   return lastKnownHeading;
 }
@@ -1232,6 +1354,7 @@ int xmbias () {
     mxcalmin = MagX;
   }
 
+Serial.print ("Bias X: "); Serial.println ((mxcalmax + mxcalmin) / 2); 
   return (mxcalmax + mxcalmin) / 2;
 }
 
@@ -1249,6 +1372,7 @@ int ymbias () {
     mycalmin = MagY;
   }
 
+  Serial.print ("Bias Y: "); Serial.println ((mycalmax + mycalmin) / 2); 
   return (mycalmax + mycalmin) / 2;
 }
 
@@ -1258,9 +1382,10 @@ double getDistance () {
   {
     IMU.readAccelData(IMU.accelCount);  // Read the x/y/z adc values
     IMU.getAres();
-    IMU.ay = (float)IMU.accelCount[1] * IMU.aRes;
+    IMU.ax = (float)IMU.accelCount[0] * IMU.aRes;
   }
 
+  double finalaccelvelocity;
   double distance;
   double curacctime = millis();
   double accelTime = (curacctime - prevacctime) / 1000;
@@ -1278,19 +1403,19 @@ double getDistance () {
     IMU.sumCount = 0;
     IMU.sum = 0;
 
-    if (IMU.ay < 0) {
-      IMU.ay = -1 * IMU.ay;
+
+    IMU.ax = -1 * IMU.ax;
+
+    if (IMU.ax > - 0.075 && IMU.ax < 0.075) {
+      IMU.ax = 0.00;
     }
 
-    if (IMU.ay < 0.075) {
-      IMU.ay = 0.00;
-    }
-
-    Serial.print("Y-acceleration: "); Serial.print(IMU.ay);
+    Serial.print("X-acceleration: "); Serial.print(IMU.ax);
     Serial.println(" g ");
 
     Serial.print("Distance between "); Serial.print(prevacctime); Serial.print(" - "); Serial.print(curacctime); Serial.print("ms: ");
-    distance = 0.5 * IMU.ay * 9.80665 * accelTime * accelTime;
+    finalaccelvelocity = accelvelocity + (IMU.ax * accelTime);
+    distance = (accelvelocity * accelTime) + (0.5 * IMU.ax * accelTime * accelTime);
     Serial.print(distance); Serial.println("m");
 
     Serial.print("Total distance: ");
@@ -1298,6 +1423,7 @@ double getDistance () {
     Serial.print(totaldistance); Serial.println("m");
 
     prevacctime = curacctime;
+    accelvelocity = finalaccelvelocity;
   }
   return totaldistance;
 }

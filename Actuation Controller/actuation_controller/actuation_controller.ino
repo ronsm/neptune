@@ -82,12 +82,13 @@ void loop() {
       Serial.println(t2); 
       turnright(t2);
     }
-    t1 = 0; t2 = 0;
 
     if (forward == true){
         forward1u();
         forward = false;
     }
+
+    t1 = 0; t2 = 0;
   
 
   //Serial.print("Battery voltage is: ");
@@ -115,7 +116,7 @@ void turnleft(int Ndegrees){
   //Procedure for interrupt
   int delayamount = map (Ndegrees, 0, 180, 600, 2600); //Maps 0 to 180 to 0 to 2 seconds
   servo1.write(145);                    //Point rudder left the required ammount
-  esc1.write(90);                       //Add some more throttle
+  esc1.write(120);                       //Add some more throttle
   delay(delayamount);                   //Wait time to move required degrees
   servo1.write(middlePosition);         //Return rudder back to middle
   esc1.write(20);                       //Stop thrust prop
@@ -131,7 +132,7 @@ void turnright(int Ndegrees){
   //Procedure for interrupt
   int delayamount = map (Ndegrees, 0, 180, 600, 2600); //Maps 0 to 180 to 0 to 2 seconds
   servo1.write(65);                     //Point rudder left the required ammount
-  esc1.write(90);                       //Add some more throttle
+  esc1.write(120);                       //Add some more throttle
   delay(delayamount);                   //Wait time to move required degrees
   servo1.write(middlePosition);         //Return rudder back to middle
   esc1.write(20);                       //Stop thrust prop
@@ -142,14 +143,14 @@ void turnright(int Ndegrees){
 
 void poweron(){
    Serial.println("Power ON");
-   esc2.write(70);
+   esc2.write(90);
 }
 
 void forward1u(){
   Serial.println("Move forward 1 unit!");
-  esc1.write(85);
+  esc1.write(94);
   delay(1000);
-  esc1.write(0);
+  esc1.write(20);
 }
 
 void poweroff(){
@@ -233,6 +234,8 @@ void requestEvent(){
         Serial.println ("Sent back 250");
         return;
       }
+
+      
 
   /*
   switch(lastcommand){
