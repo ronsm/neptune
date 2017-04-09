@@ -5,21 +5,17 @@
  * between the HTML-based GUI and the hardware of the Raspberry Pi, including
  * the I2C and GPIO functionality.
  *
- * LICENSE: This source file is subject to a Creative Commons
- * Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
- * Full details of this license are available online at:
- * https://creativecommons.org/licenses/by-nc/4.0/.
- *
  * @package    Neptune
  * @author     Ronnie Smith <ronniesmith@outlook.com>
- * @copyright  2017, Ronnie Smith
- * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
  *
  * ATTRIBUTIONS: This project uses and derives open source code and packages from
  * various authors, which are attributed here where possible.
- *    1) N/A
+ *    1) NPM module example usage:
+ *        i2c - https://www.npmjs.com/package/i2c
+ *	      serialport - https://www.npmjs.com/package/serialport
+ *	      socket.io - https://www.npmjs.com/package/socket.io
  */
 
 var http = require('http');
@@ -53,7 +49,7 @@ server = http.createServer(function (request, response) {
             break;
         case '.png':
             contentType = 'image/png';
-            break;      
+            break;
         case '.jpg':
             contentType = 'image/jpg';
             break;
@@ -88,7 +84,7 @@ server = http.createServer(function (request, response) {
             else {
                 response.writeHead(500);
                 response.end('CONTACT ADMIN '+error.code+' ..\n');
-                response.end(); 
+                response.end();
             }
         }
         else {
@@ -107,7 +103,7 @@ console.log('Server running at http://127.0.0.1:8000/');
 function errHandler(err){
 	if(err != null){
 		var errString = '[SERVER] ' + err + '\n';
-		io.emit('logWrite', errString);	
+		io.emit('logWrite', errString);
 	}
 }
 
@@ -145,19 +141,19 @@ port.on("data", function(data){
 		serialMsg = '' + data + '\n';
 		io.emit('setRadarData', serialMsg);
 	}
-	
+
 	var scString = data.substring(0, 4);
 	var scInt = Number(scString);
 	if(!isNaN(scInt)){
 		checkStatusCode(scInt);
-		console.log(scInt);	
+		console.log(scInt);
 	}
 });
 
 function checkStatusCode(code){
 	var element = 100; // No element, no value
 	var value = 100;
-	
+
 	if(code == 1000){
 		element = 1;
 		value = 0;
@@ -172,12 +168,12 @@ function checkStatusCode(code){
 		element = 2;
 		value = 0;
 		io.emit('interfaceRefresh', element, value);
-	}	
+	}
 	else if(code == 20001){
 		element = 2;
 		value = 1;
 		io.emit('interfaceRefresh', element, value);
-	}	
+	}
 	else if(code >= 3000 && code <= 3010){
 		element = 3;
 		if(code == 3000) value = 0;
@@ -191,7 +187,7 @@ function checkStatusCode(code){
 		if(code == 3008) value = 8;
 		if(code == 3009) value = 9;
 		io.emit('interfaceRefresh', element, value);
-	}	
+	}
 	else if(code >= 3990 && code <= 4010){
 		element = 4;
 		if(code == 4000) value = 0;
@@ -250,7 +246,7 @@ io.sockets.on('connection', function(socket){
 
 		newCommand = 1;
     });
-    
+
     // MODE SELECTION
     socket.on('modeSelAuto', function(command){
 		console.log(command);
@@ -265,7 +261,7 @@ io.sockets.on('connection', function(socket){
 
 		newCommand = 1;
     });
-    
+
     socket.on('modeSelIndoor', function(command){
 		console.log(command);
 		device1.writeByte(12, function(err) { errHandler(err) });
@@ -279,22 +275,22 @@ io.sockets.on('connection', function(socket){
 
 		newCommand = 1;
     });
-    
+
     // MANUAL CONTROLS
-    
+
     socket.on('navManForward', function(command){
 		console.log(command);
 		device1.writeByte(100, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
-    
+
     socket.on('navManRudder', function(command){
 		var commandInt = command.toString();
-		
+
 		var commandAdjusted;
 		commandAdjusted = 112;
-		
+
 		if(commandInt == 0){
 			commandAdjusted = 101;
 		}
@@ -328,22 +324,22 @@ io.sockets.on('connection', function(socket){
 		if(commandInt == 10){
 			commandAdjusted = 111;
 		}
-		
+
 		console.log(command);
 		console.log('rudder position:');
 		console.log(commandAdjusted);
-		
+
 		device1.writeByte(commandAdjusted, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
-    
+
     socket.on('navManSpeed', function(command){
 		var commandInt = command.toString();
-		
+
 		var commandAdjusted;
 		commandAdjusted = 130;
-		
+
 		if(commandInt == 0){
 			commandAdjusted = 120;
 		}
@@ -374,83 +370,83 @@ io.sockets.on('connection', function(socket){
 		if(commandInt == 9){
 			commandAdjusted = 129;
 		}
-		
+
 		console.log(command);
 		console.log('rudder position:');
 		console.log(commandAdjusted);
-		
+
 		device1.writeByte(commandAdjusted, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
-    
+
     // MAP MANAGEMENT
-    
+
     socket.on('submitCoordCmd', function(command){
-		
+
 		device1.writeByte(140, function(err) { errHandler(err) });
-		
+
 		var commandString = command.toString();
 		console.log(commandString);
 
 		var commandStringSplit = command.split(',');
 		var commandStringLeft = commandStringSplit[0].toString();
 		var commandStringRight = commandStringSplit[1].toString();
-		
+
 		commandStringLeft = commandStringLeft.substr(1);
 		commandStringRight = commandStringRight.substr(1);
 		commandStringRightFinal = commandStringRight.substr(0, commandStringRight.length - 1);
-		
+
 		console.log(commandStringLeft);
 		console.log(commandStringRightFinal);
-		
+
 		var coordLength = 10;
 		var commandStringLeftShort = commandStringLeft.substring(0, coordLength);
 		var commandStringRightShort = commandStringRightFinal.substring(0, coordLength);
-		
+
 		var commandStringCombined = commandStringLeftShort.concat(","+commandStringRightShort);
-		
+
 		commandChars = commandStringCombined.split('');
 		console.log(commandChars);
-		
+
 		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
 
 		newCommand = 1;
     });
-    
-    socket.on('submitIndoorStart', function(command) {
-		
-		var commandString = command.toString();
-		
-		var commandChars = commandString.split('');
-		
-		device1.writeByte(141, function(err) { errHandler(err) });
-		
-		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
-		
-		console.log(commandChars);
-		
-		newCommand = 1;
-	});
-	
-	socket.on('submitIndoorDest', function(command) {
-		
-		var commandString = command.toString();
-		
-		var commandChars = commandString.split('');
-		
-		device1.writeByte(142, function(err) { errHandler(err) });
-		
-		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
-		
-		console.log(commandChars);
-		
-		newCommand = 1;
-	});
-    
-    // AUTOMATIC LOG UPDATING
 
-    socket.on('logUpdate', function(logMsg){
+    socket.on('submitIndoorStart', function(command) {
+
+		var commandString = command.toString();
+
+		var commandChars = commandString.split('');
+
+		device1.writeByte(141, function(err) { errHandler(err) });
+
+		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
+
+		console.log(commandChars);
+
+		newCommand = 1;
+	});
+
+	socket.on('submitIndoorDest', function(command) {
+
+		var commandString = command.toString();
+
+		var commandChars = commandString.split('');
+
+		device1.writeByte(142, function(err) { errHandler(err) });
+
+		device1.writeBytes('COORDINATES', commandChars, function(err) { errHandler(err) });
+
+		console.log(commandChars);
+
+		newCommand = 1;
+	});
+
+  // AUTOMATIC LOG UPDATING
+
+  socket.on('logUpdate', function(logMsg){
 		if(newCommand == 0){
 			return;
 		}
@@ -462,13 +458,13 @@ io.sockets.on('connection', function(socket){
 			io.emit('logWrite', interprettedMsg);
 
 		newCommand = 0;
-    });
+  });
 
 });
 
 function interpretMsg(msg){
 	console.log(msg);
-	
+
 	var i;
 	var asciiMsg = msg.toString('ascii');
 	var msgArray = asciiMsg.split(' ');

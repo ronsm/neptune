@@ -5,15 +5,8 @@
  * friendly interface that allows a user to use their own device
  * to remotely control the hovercraft.
  *
- * LICENSE: This source file is subject to a Creative Commons
- * Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
- * Full details of this license are available online at:
- * https://creativecommons.org/licenses/by-nc/4.0/.
- *
  * @package    Neptune
  * @author     Ronnie Smith <ronniesmith@outlook.com>
- * @copyright  2017, Ronnie Smith
- * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
  *
@@ -69,12 +62,12 @@
          	$('#LOG').keypress(function(e){
          	  socket.emit('client_data', {'letter': String.fromCharCode(e.charCode)});
          	});
-         }); 
-		 
+         });
+
 		 <!-- POWER MANAGEMENT -->
          $(document).off('click', '#ON').on('click', '#ON', function (e) {
              console.log('power on');
-             
+
              $("#ON").prop("disabled", true);
              $("#OFF").prop("disabled", false);
              $("#ON").css('background-color', '#1CC6FF');
@@ -86,7 +79,7 @@
 
          $(document).off('click', '#OFF').on('click', '#OFF', function (e) {
              console.log('power off');
-             
+
              $("#OFF").prop("disabled", true);
              $("#ON").prop("disabled", false);
              $("#OFF").css('background-color', '#1CC6FF');
@@ -103,13 +96,13 @@
              $("#ON").prop("disabled", false);
              $("#OFF").css('background-color', '#1CC6FF');
              $("#ON").css('background-color', 'grey');
-			 
+
 			 <!-- MANUAL MODE BY DEFAULT -->
              $("#MANUAL").prop("disabled", true);
              $("#AUTO").prop("disabled", false);
              $("#MANUAL").css('background-color', '#1CC6FF');
              $("#AUTO").css('background-color', 'grey');
-             
+
              <!-- OUTDOOR MODE BY DEFAULT -->
              $("#OUTDOOR").prop("disabled", true);
              $("#INDOOR").prop("disabled", false);
@@ -118,10 +111,10 @@
              $("#NAV_OUTDOOR").show();
              $("#NAV_INDOOR").hide();
 		});
-		
+
 		$(document).off('click', '#AUTO').on('click', '#AUTO', function (e) {
              console.log('mode: auto');
-             
+
              $("#AUTO").prop("disabled", true);
              $("#MANUAL").prop("disabled", false);
              $("#AUTO").css('background-color', '#1CC6FF');
@@ -134,7 +127,7 @@
 
          $(document).off('click', '#MANUAL').on('click', '#MANUAL', function (e) {
              console.log('mode: manual');
-             
+
              $("#MANUAL").prop("disabled", true);
              $("#AUTO").prop("disabled", false);
              $("#MANUAL").css('background-color', '#1CC6FF');
@@ -144,10 +137,10 @@
              socket.emit('modeSelManual', {command: 'mode_sel_manual'});
              e.preventDefault();
          });
-         
+
          $(document).off('click', '#INDOOR').on('click', '#INDOOR', function (e) {
              console.log('mode: indoor');
-             
+
              $("#INDOOR").prop("disabled", true);
              $("#OUTDOOR").prop("disabled", false);
              $("#INDOOR").css('background-color', '#1CC6FF');
@@ -161,7 +154,7 @@
 
          $(document).off('click', '#OUTDOOR').on('click', '#OUTDOOR', function (e) {
              console.log('mode: outdoor');
-             
+
              $("#OUTDOOR").prop("disabled", true);
              $("#INDOOR").prop("disabled", false);
              $("#OUTDOOR").css('background-color', '#1CC6FF');
@@ -173,36 +166,36 @@
              socket.emit('modeSelOutdoor', {command: 'mode_sel_outdoor'});
              e.preventDefault();
          });
-         
+
          <!-- MANUAL CONTROLS -->
-         
+
          $(document).off('click', '#FORWARD').on('click', '#FORWARD', function (e) {
              console.log('nav: forward');
 
              socket.emit('navManForward', {command: 'nav_man_forward'});
              e.preventDefault();
          });
-         
+
          $(document).off('mouseup', '#RUDDER_POS').on('click', '#RUDDER_POS', function (e) {
              console.log('rudder pos');
-             
+
              var rudder = $('#RUDDER_POS').val();
              console.log(rudder);
 
              socket.emit('navManRudder', rudder);
              e.preventDefault();
          });
-         
+
          $(document).off('mouseup', '#SPEED_POS').on('click', '#SPEED_POS', function (e) {
              console.log('speed pos');
-             
+
              var speed = $('#SPEED_POS').val();
              console.log(speed);
 
              socket.emit('navManSpeed', speed);
              e.preventDefault();
          });
-		
+
 		 <!-- HANDLE DATA FROM SERVER -->
 
 		 socket.on('interfaceRefresh', function(elem, val){
@@ -293,24 +286,24 @@
          setInterval(function(){
              socket.emit('logUpdate', "logUpdate");
          }, 100);
-         
+
 		 setInterval(function(){
 		   //var newData = updateRadar();
 		   myLiveChart.data.datasets[0].data = radarData;
 		   myLiveChart.update();
 		 }, 5000);
-         
+
          var radarData = [];
-         
+
          socket.on('setRadarData', function(logReceive){
 			console.log(logReceive);
-			
+
 			var strArr = logReceive.split(',');
 			var intArr = [];
 			for(i = 0; i < 18; i++){
 				intArr.push(parseInt(strArr[i]));
 			}
-			
+
 			for(i = 0; i < 9; i++){
 					radarData[i] = intArr[i+9];
 			}
@@ -334,17 +327,17 @@
            socket.emit('submitCoordCmd', coordString);
            e.preventDefault();
          });
-         
+
 		 <!-- MAP - INDOOR -->
 		 $(document).off('click', '#SUBMIT_INDOOR_START').on('click', '#SUBMIT_INDOOR_START', function (e) {
 		   var coordLat = $("#POS_BOX_LAT").val();
 		   var coordLng = $("#POS_BOX_LNG").val();
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
-		   
+
 		   console.log(coordString);
 		   var msg = "New indoor origin coordinate: " + coordString + "\n";
 		   localLogWrite(msg);
-		   
+
 		   socket.emit('submitIndoorStart', coordString);
 		   e.preventDefault();
 		 });
@@ -353,26 +346,26 @@
 		   var coordLat = $("#POS_BOX_LAT").val();
 		   var coordLng = $("#POS_BOX_LNG").val();
 		   var coordString = coordLat.toString() + ',' + coordLng.toString()
-		   
+
 		   console.log(coordString);
 		   var msg = "New indoor destination coordinate: " + coordString + "\n";
 		   localLogWrite(msg);
-		   
+
 		   socket.emit('submitIndoorDest', coordString);
 		   e.preventDefault();
 		 });
-		 
+
 		 $(document).off('change', '#INDOOR_MAP_SELECT').on('change', '#INDOOR_MAP_SELECT', function (e) {
 			 indoorMapLoad();
 		 });
 
 		 <!-- CAMERA -->
- 
+
  		 socket.on('live-stream', function(image) {
 		    $('#stream').attr('src', 'data:image/jpg;base64,' + image);
 		    $('#start').hide();
 		 });
-		 
+
 		 function startStream() {
 		    socket.emit('start-stream');
 		    $('#start').hide();
@@ -501,8 +494,8 @@
                         <b>Radar</b>
                      </div>
                      <div class="panel-body">
-                       
-                     <canvas id="radarChart" width="100" height="100"></canvas>  
+
+                     <canvas id="radarChart" width="100" height="100"></canvas>
                      <script language="javascript" type="text/javascript">
 						var canvas = document.getElementById('radarChart'),
 							ctx = canvas.getContext('2d'),
@@ -527,7 +520,7 @@
 						var myLiveChart = new Chart(ctx, {type:"radar", data:startingData, animationSteps:15,});
 
                      </script>
-                       
+
                      </div>
                   </div>
                </div>
@@ -607,18 +600,18 @@
 								marker.on('dragend', function(event) {
 								  var marker = event.target;
 								  var result = marker.getLatLng();
-								  
+
 								  var markerLat = result.lat;
 								  var markerLng = result.lng;
-								  
+
 								  document.getElementById('POS_BOX_LAT').value = markerLat;
 								  document.getElementById('POS_BOX_LNG').value = markerLng;
-								  
+
 								  console.log(markerLat);
 								  console.log(markerLng);
 								  console.log(result);
 								});
-								
+
 								indoorMap.on('drag', function() {
 									indoorMap.panInsideBounds(bounds, {animate: false});
 								});

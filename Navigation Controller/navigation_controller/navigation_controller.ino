@@ -5,16 +5,9 @@
  * It is responsible for responding to commands sent from the hovercraft's computer
  * in order to facilitate navigation using the connected sensors and actuators.
  *
- * LICENSE: This source file is subject to a Creative Commons
- * Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
- * Full details of this license are available online at:
- * https://creativecommons.org/licenses/by-nc/4.0/.
- *
  * @package    Neptune
  * @author(s)  Ronnie Smith
  *             Alex James
- * @copyright  2017, Neptune
- * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
  *
@@ -30,6 +23,7 @@
  *       http://www.engineersgarage.com/contribution/arduino-based-ultrasonic-radar
  *    2) "Bearing between two points on the earth" by Haishi
  *       http://haishibai.blogspot.co.uk/2009/09/bearing-between-two-points-on-earth.html
+ *    3) Libraries included below available at ../Libraries/
  */
 
 
@@ -223,36 +217,38 @@ void setup() {
 void loop() {
   delay(1000);
 
+  radarScan();
+
   // GPS
-  gpsLoop();
-  
-  getDistance();
-
-  Serial.println(getHeading());
-
-  statusUpdate();
-
-  if (awaitingResponse == true && controlMode == true) {
-    checkForResponse();
-  }
-  else {
-    if(demoMode == true){
-      demoModeController();
-    }
-    else if (environmentMode == false && controlMode == true) {
-      outdoorAutoController();
-    }
-    else if (environmentMode == true && controlMode == true) {
-      //indoorAutoController();
-      demoModeController2();
-    }
-    else if(environmentMode == false && controlMode == false){
-      manualModeController();
-    }
-    else{
-      manualModeController();
-    }
-  }
+//  gpsLoop();
+//  
+//  getDistance();
+//
+//  Serial.println(getHeading());
+//
+//  statusUpdate();
+//
+//  if (awaitingResponse == true && controlMode == true) {
+//    checkForResponse();
+//  }
+//  else {
+//    if(demoMode == true){
+//      demoModeController();
+//    }
+//    else if (environmentMode == false && controlMode == true) {
+//      outdoorAutoController();
+//    }
+//    else if (environmentMode == true && controlMode == true) {
+//      //indoorAutoController();
+//      demoModeController2();
+//    }
+//    else if(environmentMode == false && controlMode == false){
+//      manualModeController();
+//    }
+//    else{
+//      manualModeController();
+//    }
+//  }
 }
 
 /* Functions to operate the demonstration mode */
@@ -1080,10 +1076,24 @@ void radarScan() {
       delay(200);
     }
     else {
-      radarDistances[radar_angle / 10] = 0;
+      radarDistances[radar_angle / 10] = 200;
       //Serial.print("[RADAR] Angle: %d, Distance: OUT OF RANGE \n", radar_angle);
-      delay(200);
     }
+  }
+
+  int temp[18];
+
+  int i = 0;
+  int j = 18;
+
+  while(j){
+    temp[i] = radarDistances[j];
+    i++;
+    j--;
+  }
+
+  for(int i = 0; i < 18; i++){
+    radarDistances[i] = temp[i];
   }
 
   Serial.print("[RADAR] ");
@@ -1092,8 +1102,6 @@ void radarScan() {
     Serial.print(", ");
   }
   Serial.print("\n");
-
-  radarPrintDistances();
 
   radarCalcDirection();
 }
