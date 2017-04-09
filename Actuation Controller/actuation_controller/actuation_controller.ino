@@ -11,15 +11,14 @@
  *
  * @package    Neptune
  * @author     Seb Smith
- * @copyright  2017, Seb Smith
- * @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
  * @version    1.1
  * @link       https://github.com/ronsm/neptune
  * 
  * ATTRIBUTIONS: This project uses and derives open source code and packages from
  * various authors, which are attributed here where possible.
- *    1) REF
+ *    1) N/A
  */
+ 
 #include <Servo.h>
 #include <Wire.h>
 
