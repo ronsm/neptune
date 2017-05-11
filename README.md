@@ -1,7 +1,7 @@
 <img src="/neptune.png" width="200">
 Repository for the Neptune Autonomous Hovercraft project.
 
-## Built with
+## Attribution
 
 We have used various packages and utilities to build Neptune. Most of which are listed below, grouped
 according to the part of the system they are utilized by.
