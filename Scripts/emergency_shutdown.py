@@ -12,8 +12,6 @@
 #
 # @package    Neptune
 # @author     Ronnie Smith <ronniesmith@outlook.com>
-# @copyright  2017, Ronnie Smith
-# @license    https://creativecommons.org/licenses/by-nc/4.0/ CC BY-NC 4.0
 # @version    1.0
 # @link       https://github.com/ronsm/neptune
 #
