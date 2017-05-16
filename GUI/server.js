@@ -6,7 +6,7 @@
  * the I2C and GPIO functionality.
  *
  * @package    Neptune
- * @author     Ronnie Smith <ronniesmith@outlook.com>
+ * @author     Ronnie Smith
  * @version    1.0
  * @link       https://github.com/ronsm/neptune
  *
