@@ -136,6 +136,8 @@ double accelvelocity = 0;
  */
 void setup() {
   // Serial
+  // -- Baud rates higher than 57600 are less stable on the server end.
+  //    This rate is also hard coded into server.js, do not change.
   Serial.begin(57600);           // start serial for output
   Serial.print("Serial: OK \n");
 
@@ -146,6 +148,7 @@ void setup() {
   Serial.print("I2C: OK \n");
 
   // Radar
+  // -- For the rotating sensor on top of the hovercraft.
   pinMode(radarTrigPin, OUTPUT);  // trig pin as output
   pinMode(radarEchoPin, INPUT);   // echo pin as input
   radarServo.attach(12);
@@ -153,6 +156,7 @@ void setup() {
   Serial.print("Radar: OK \n");
 
   // Distance sensors
+  // -- For the three fixed distance sensors.
   pinMode(distLeftTrig, OUTPUT);
   pinMode(distLeftEcho, INPUT);
 
@@ -163,6 +167,7 @@ void setup() {
   pinMode(distRightEcho, INPUT);
 
   // GPS
+  // -- Sets up the GPS module as described in the datasheet.
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
@@ -173,6 +178,7 @@ void setup() {
   Serial.print("GPS: OK \n");
 
   // Safety
+  // -- Ensures that the system resets to a safe state (i.e. motors off)
   environmentMode = false;
   controlMode = false;
   demoMode = false;
@@ -186,9 +192,11 @@ void setup() {
   Serial.print("NAVIGATION: OK \n");
 
   // IMU
+  // -- Includes built in self-test.
+  //    If the boot process ends after the print statement above, it is likely that the test has failed.
   byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
   Serial.print("MPU9250 "); Serial.print("IMU is at address: "); Serial.print(c, HEX);
-
+  
   if (c == 0x71) {
     Serial.println("MPU9250 is online...");
 
@@ -220,41 +228,44 @@ void loop() {
   radarScan();
 
   // GPS
-//  gpsLoop();
-//  
-//  getDistance();
-//
-//  Serial.println(getHeading());
-//
-//  statusUpdate();
-//
-//  if (awaitingResponse == true && controlMode == true) {
-//    checkForResponse();
-//  }
-//  else {
-//    if(demoMode == true){
-//      demoModeController();
-//    }
-//    else if (environmentMode == false && controlMode == true) {
-//      outdoorAutoController();
-//    }
-//    else if (environmentMode == true && controlMode == true) {
-//      //indoorAutoController();
-//      demoModeController2();
-//    }
-//    else if(environmentMode == false && controlMode == false){
-//      manualModeController();
-//    }
-//    else{
-//      manualModeController();
-//    }
-//  }
+  gpsLoop();
+  
+  getDistance();
+
+  Serial.println(getHeading());
+
+  statusUpdate(); // Automatically updates the status of the nav-con.
+
+  if (awaitingResponse == true && controlMode == true) {
+    checkForResponse();
+  }
+  else { // This if statement determines what mode controller is activated.
+    if(demoMode == true){
+      demoModeController();
+    }
+    else if (environmentMode == false && controlMode == true) {
+      outdoorAutoController();
+    }
+    else if (environmentMode == true && controlMode == true) {
+      //indoorAutoController();
+      demoModeController2();
+    }
+    else if(environmentMode == false && controlMode == false){
+      manualModeController();
+    }
+    else{
+      manualModeController();
+    }
+  }
 }
 
 /* Functions to operate the demonstration mode */
 
 /**
  * Runs the demonstration mode for the hovercraft.
+ * 
+ * In this mode the hovercraft behaves according to a simple behaviour-based robotics (BBR) mechanism.
+ * It will control the actuators in direct response to external stimulus.
  */
 void demoModeController(){
   Serial.println("DEMO MODE");
@@ -300,6 +311,12 @@ void demoModeController(){
   }
 }
 
+/**
+ * Runs and alternative demonstration mode for the hovercraft.
+ * 
+ * Similar to the standard demo mode controller, but employing the obstacle avoidance strategy.
+ * Slightly more intelligent.
+ */
 void demoModeController2(){
   Serial.println("DEMO MODE");
 
@@ -326,6 +343,8 @@ void receiveEvent(int byteCount) {
 
   //Serial.print(byteCount);
 
+  // Some commands will not be handled directly here, but rather will be passed on to the
+  // actuation controller if there is nothing to be done at this level.
   if (byteCount == 1) {
     while (Wire.available()) {
       number = Wire.read();
@@ -402,6 +421,8 @@ void receiveEvent(int byteCount) {
     }
   }
 
+  // This handles situations where the user has submitted an indoor coordinate.
+  // It will read the coordinate and parse it so that it can be stored in the local data strucutre.
   if (byteCount > 1 && (lastCommand == 141)) {
     lastIndoorStartCoord = "";
     while (1 < Wire.available()) {
@@ -423,7 +444,7 @@ void receiveEvent(int byteCount) {
     Serial.print(lastIndoorStartCoordX);
     Serial.println();
   }
-
+  
   if (byteCount > 1 && (lastCommand == 142)) {
     lastIndoorDestCoord = "";
     while (1 < Wire.available()) {
@@ -446,6 +467,11 @@ void receiveEvent(int byteCount) {
     Serial.println();
   }
 
+  // This handles situations where the user has submitted an outdoor coordinate.
+  // It will read the coordinate and parse it so that it can be stored in the local data strucutre.
+  //
+  // This is likely not the cleanest solution, but over the current interface it is able to obtain a
+  // coordinate of relatively good accuracy.
   if (byteCount > 20) {
     while (1 < Wire.available()) { // loop through all but the last
       int c = Wire.read(); // receive byte as a character
@@ -488,6 +514,13 @@ void receiveEvent(int byteCount) {
   }
 }
 
+/**
+ * This function is responsible for issuing information back to the server.
+ * The information it provides is used to make sure that the status of the GUI matches
+ * what is happening at the controller level.
+ *
+ * If the serial link is down this will cause problems with the GUI.
+ */
 void statusUpdate() {
   if (!controlMode)
   {
@@ -537,7 +570,7 @@ void requestEvent() {
 /* Actuation Controller communications */
 
 /**
- * Sends the most recent command to the actuation controller.
+ * Sends the most recent command to the actuation controller, if there is one.
  */
 void sendActuationCommand() {
   Wire.beginTransmission(3);
@@ -555,7 +588,7 @@ void sendActuationCommand() {
 
 /**
  * Polls the actuation controller to see if it has completed its
- * last command.
+ * last command. Another command will not be issued until it has.
  */
 void checkForResponse() {
   Wire.requestFrom(3, 1);
@@ -624,6 +657,8 @@ void manualModeController() {
 /**
  * Sends a turn command to the actuation controller of a specific
  * direction and number of degrees.
+ *
+ * numDegrees should not exceed 180.
  */
 void turnByDegrees(bool direction, int numDegrees) {
   if(direction == false){
@@ -637,6 +672,8 @@ void turnByDegrees(bool direction, int numDegrees) {
     Serial.print(" degrees \n");
   }
   
+  // The actuation controller expects a packet containing the 
+  // direction followed by the number of degrees.
   byte buffer[2];
   
   Wire.beginTransmission(3);
@@ -652,7 +689,7 @@ void turnByDegrees(bool direction, int numDegrees) {
     Wire.write(buffer, 2);
   }
   Wire.endTransmission();
-  awaitingResponse = true;
+  awaitingResponse = true; // This locks sendActuationCommand to avoid overloading act-con
 }
 
 /**
@@ -691,6 +728,12 @@ void sudoMoveForward() {
 
 /**
  * This is the mode controller for the Outdoor - Auto mode.
+ *
+ * It instantiates structs which hold the current and destination
+ * coordinates. The current position is retrieved from the GPS.
+ *
+ * If the user has provided a destination coordinate via the GUI,
+ * navigation will begin, otherwise it will be stuck in the loop waiting.
  */
 void outdoorAutoController() {
 
@@ -718,8 +761,8 @@ void outdoorAutoController() {
 
     destinationPosition = getDestinationPosition();
 
-    //currentHeading = getHeading();
-    currentHeading = 150.0;
+    currentHeading = getHeading(); // From IMU compass
+    //currentHeading = 150.0;
     destinationHeading = getDestinationHeading(&destinationPosition, &currentPosition);
 
     calcMoveToHeading(destinationHeading, currentHeading);
@@ -760,6 +803,9 @@ coord getDestinationPosition() {
 
 /**
  * Retreives the vehicles current heading from the IMU compass.
+ *
+ * If a reliable sensor is available to provide the current heading the
+ * code for it would go here, until then the value is set manually.
  */
 double getCurrentHeading() {
   double currentHeading;
@@ -832,6 +878,8 @@ bool navigateObstacle() {
     return res;
   }
 
+  // Here we use the sonar to point to the left or right of the hovercraft, so as to
+  // 'track' the obstacle. Distance values from the sonar are averaged to improve reliability.
   long d1, d2, d3;
   long dAvg;
 
@@ -875,6 +923,11 @@ bool navigateObstacle() {
 
 /**
  * Retreives the vehicles destination heading, based on the current coordinate position of the vehicle.
+ *
+ * Based on the current and destination coordinates, it is possible to calculate the degree that the hovercraft
+ * must align with in order to travel directly towards the destination.
+ *
+ * Takes into account the curvature of the earth.
  */
 double getDestinationHeading(coord* currentPosition, coord* destinationPosition) {
   int moveEastWest = 0;
@@ -910,6 +963,9 @@ double getDestinationHeading(coord* currentPosition, coord* destinationPosition)
 
 /**
  * Determine the number of degrees to turn and in which direction.
+ *
+ * Calculates the most efficient direction to turn once we know the heading that
+ * must be followed.
  */
 void calcMoveToHeading(double destinationHeading, double currentHeading) {
   int degDifference = destinationHeading - currentHeading;
@@ -960,6 +1016,8 @@ void calcMoveToHeading(double destinationHeading, double currentHeading) {
 
 /**
  * This is the mode controller for the Indoor - Auto mode.
+ *
+ * TODO
  */
 void indoorAutoController() {
 
@@ -1043,6 +1101,8 @@ bool obstacleDetection() {
 
 /**
  * Completes one complete 180* radar scan and saves the distances to an array.
+ *
+ * TODO: Alex, please comment!
  */
 void radarScan() {
   Serial.println("radarScan()");
@@ -1122,6 +1182,9 @@ void radarPrintDistances() {
 
 /**
  * Calculates best direction of travel based on obstacles detected by scanning radar.
+ *
+ * Based on the current values held in the sonar array, this function will work out if there is
+ * a space through which it will fit and will indicate what direction to travel on that basis.
  */
 void radarCalcDirection() {
   int possibleDirection  = 0;
@@ -1140,6 +1203,7 @@ void radarCalcDirection() {
     }
   }
 
+  // Searching for a continuous gap in the sonar reading.
   for (int i = 0; i <= 16; i++) {
     if ((clearDirections[i] == true) && (clearDirections[i + 1] == true) && (clearDirections[i + 2] == true)) {
       directionFound = true;
@@ -1167,6 +1231,13 @@ void radarCalcDirection() {
 long microsecondsToCentimeters(long us) {
   return us / 58;
 }
+
+/**
+ * IMPORTANT
+ *
+ * The functions below this line are mostly implemented as instructed in the datasheet for the sensors.
+ * There is documentation online for most of the sensors that provide further analysis of what the code does.
+ */
 
 /* GPS */
 
