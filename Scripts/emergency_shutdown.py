@@ -8,7 +8,7 @@
 #
 # @package    Neptune
 # @author     Ronnie Smith <ronniesmith@outlook.com>
-# @version    1.0
+# @version    1.1
 # @link       https://github.com/ronsm/neptune
 #
 
